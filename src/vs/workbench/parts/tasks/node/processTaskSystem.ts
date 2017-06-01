@@ -8,7 +8,7 @@ import * as nls from 'vs/nls';
 import * as Objects from 'vs/base/common/objects';
 import * as Types from 'vs/base/common/types';
 import * as Platform from 'vs/base/common/platform';
-import { TPromise, Promise } from 'vs/base/common/winjs.base';
+import { TPromise, Promise, TValueCallback, ErrorCallback } from 'vs/base/common/winjs.base';
 import * as Async from 'vs/base/common/async';
 import Severity from 'vs/base/common/severity';
 import * as Strings from 'vs/base/common/strings';
@@ -49,6 +49,7 @@ export class ProcessTaskSystem extends EventEmitter implements ITaskSystem {
 	private childProcess: LineProcess;
 	private activeTask: Task;
 	private activeTaskPromise: TPromise<ITaskSummary>;
+	private terminatePromise: { resolve: TValueCallback<TerminateResponse>; reject: ErrorCallback };
 
 	constructor(markerService: IMarkerService, modelService: IModelService, telemetryService: ITelemetryService,
 		outputService: IOutputService, configurationResolverService: IConfigurationResolverService, outputChannelId: string) {
@@ -111,10 +112,19 @@ export class ProcessTaskSystem extends EventEmitter implements ITaskSystem {
 	}
 
 	public terminateAll(): TPromise<TerminateResponse> {
-		if (this.childProcess) {
-			return this.childProcess.terminate();
+		if (!this.childProcess) {
+			return TPromise.as({ success: true });
 		}
-		return TPromise.as({ success: true });
+		if (this.terminatePromise) {
+			return TPromise.as<TerminateResponse>({ success: false });
+		}
+		return new TPromise((resolve, reject) => {
+			this.childProcess.terminate().done((value) => {
+				this.terminatePromise = { resolve, reject };
+			}, (error) => {
+				reject(error);
+			});
+		});
 	}
 
 	private executeTask(task: Task, trigger: string = Triggers.command): ITaskExecuteResult {
@@ -271,6 +281,10 @@ export class ProcessTaskSystem extends EventEmitter implements ITaskSystem {
 		this.childProcess = null;
 		this.activeTask = null;
 		this.activeTaskPromise = null;
+		if (this.terminatePromise) {
+			this.terminatePromise.resolve({ success: true });
+			this.terminatePromise = undefined;
+		}
 	}
 
 	private handleError(task: Task, error: ErrorData): Promise {
