@@ -153,6 +153,11 @@ export interface ITerminalService {
 	setWorkspaceShellAllowed(isAllowed: boolean): void;
 }
 
+export enum TerminalSplitDirection {
+	Vertical,
+	Horizontal
+}
+
 export interface ITerminalInstance {
 	/**
 	 * The ID of the terminal instance, this is an arbitrary number only used to identify the
@@ -174,6 +179,8 @@ export interface ITerminalInstance {
 	 * An event that fires when the terminal instance is disposed.
 	 */
 	onDisposed: Event<ITerminalInstance>;
+
+	onSplitRequest: Event<TerminalSplitDirection>;
 
 	/**
 	 * The title of the terminal. This is either title or the process currently running or an

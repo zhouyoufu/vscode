@@ -19,7 +19,7 @@ import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
 import { IMessageService, Severity } from 'vs/platform/message/common/message';
 import { IPanelService } from 'vs/workbench/services/panel/common/panelService';
 import { IStringDictionary } from 'vs/base/common/collections';
-import { ITerminalInstance, KEYBINDING_CONTEXT_TERMINAL_TEXT_SELECTED, TERMINAL_PANEL_ID, IShellLaunchConfig } from 'vs/workbench/parts/terminal/common/terminal';
+import { ITerminalInstance, KEYBINDING_CONTEXT_TERMINAL_TEXT_SELECTED, TERMINAL_PANEL_ID, IShellLaunchConfig, TerminalSplitDirection } from 'vs/workbench/parts/terminal/common/terminal';
 import { ITerminalProcessFactory } from 'vs/workbench/parts/terminal/electron-browser/terminal';
 import { IWorkspace, IWorkspaceContextService } from 'vs/platform/workspace/common/workspace';
 import { IWorkbenchEditorService } from 'vs/workbench/services/editor/common/editorService';
@@ -33,6 +33,7 @@ import { registerThemingParticipant, ITheme, ICssStyleCollector } from 'vs/platf
 import { scrollbarSliderBackground, scrollbarSliderHoverBackground, scrollbarSliderActiveBackground } from 'vs/platform/theme/common/colorRegistry';
 import { TPromise } from 'vs/base/common/winjs.base';
 import { IClipboardService } from 'vs/platform/clipboard/common/clipboardService';
+import { ITerminalPart } from 'vs/workbench/parts/terminal/browser/terminal';
 
 /** The amount of time to consider terminal errors to be related to the launch */
 const LAUNCHING_DURATION = 500;
@@ -46,7 +47,7 @@ class StandardTerminalProcessFactory implements ITerminalProcessFactory {
 	}
 }
 
-export class TerminalInstance implements ITerminalInstance {
+export class TerminalInstance implements ITerminalInstance, ITerminalPart {
 	private static readonly WINDOWS_EOL_REGEX = /\r?\n/g;
 
 	private static _terminalProcessFactory: ITerminalProcessFactory = new StandardTerminalProcessFactory();
@@ -64,6 +65,7 @@ export class TerminalInstance implements ITerminalInstance {
 	private _onDataForApi: Emitter<{ instance: ITerminalInstance, data: string }>;
 	private _onProcessIdReady: Emitter<TerminalInstance>;
 	private _onTitleChanged: Emitter<string>;
+	private _onSplitRequest: Emitter<TerminalSplitDirection>;
 	private _process: cp.ChildProcess;
 	private _processId: number;
 	private _skipTerminalCommands: string[];
@@ -87,6 +89,7 @@ export class TerminalInstance implements ITerminalInstance {
 	public get onDataForApi(): Event<{ instance: ITerminalInstance, data: string }> { return this._onDataForApi.event; }
 	public get onProcessIdReady(): Event<TerminalInstance> { return this._onProcessIdReady.event; }
 	public get onTitleChanged(): Event<string> { return this._onTitleChanged.event; }
+	public get onSplitRequest(): Event<TerminalSplitDirection> { return this._onSplitRequest.event; };
 	public get title(): string { return this._title; }
 	public get hadFocusOnExit(): boolean { return this._hadFocusOnExit; }
 
@@ -119,6 +122,7 @@ export class TerminalInstance implements ITerminalInstance {
 		this._onDataForApi = new Emitter<{ instance: ITerminalInstance, data: string }>();
 		this._onProcessIdReady = new Emitter<TerminalInstance>();
 		this._onTitleChanged = new Emitter<string>();
+		this._onSplitRequest = new Emitter<TerminalSplitDirection>();
 
 		// Create a promise that resolves when the pty is ready
 		this._processReady = new TPromise<void>(c => {
