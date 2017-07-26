@@ -54,7 +54,8 @@ interface IViewState {
 }
 
 interface IWalkThroughEditorViewState {
-	viewState: IViewState;
+	viewState?: IViewState;
+	extraState?: any;
 }
 
 interface IWalkThroughEditorViewStates {
@@ -311,11 +312,17 @@ export class WalkThroughPart extends BaseEditor {
 					this.updateSizeClasses();
 					this.decorateContent();
 					this.contentDisposables.push(this.keybindingService.onDidUpdateKeybindings(() => this.decorateContent()));
+					const { viewState, extraState } = this.loadTextEditorViewState(input.getResource());
+					if (input.setExtraState && extraState) {
+						input.setExtraState(extraState);
+					}
 					if (input.onReady) {
 						input.onReady(this.content.firstElementChild as HTMLElement);
 					}
 					this.scrollbar.scanDomNode();
-					this.loadTextEditorViewState(input.getResource());
+					if (viewState) {
+						this.scrollbar.updateState(viewState);
+					}
 					this.updatedScrollPosition();
 					return;
 				}
@@ -409,11 +416,17 @@ export class WalkThroughPart extends BaseEditor {
 				this.updateSizeClasses();
 				this.multiCursorModifier();
 				this.contentDisposables.push(this.configurationService.onDidUpdateConfiguration(() => this.multiCursorModifier()));
+				const { viewState, extraState } = this.loadTextEditorViewState(input.getResource());
+				if (input.setExtraState && extraState) {
+					input.setExtraState(extraState);
+				}
 				if (input.onReady) {
 					input.onReady(innerContent);
 				}
 				this.scrollbar.scanDomNode();
-				this.loadTextEditorViewState(input.getResource());
+				if (viewState) {
+					this.scrollbar.updateState(viewState);
+				}
 				this.updatedScrollPosition();
 			});
 	}
@@ -486,11 +499,13 @@ export class WalkThroughPart extends BaseEditor {
 		}
 
 		const scrollState = this.scrollbar.getScrollState();
+		const getExtraState = (this.input as WalkThroughInput).getExtraState;
 		const editorViewState: IWalkThroughEditorViewState = {
 			viewState: {
 				scrollTop: scrollState.scrollTop,
 				scrollLeft: scrollState.scrollLeft
-			}
+			},
+			extraState: getExtraState && getExtraState()
 		};
 
 		let fileViewState: IWalkThroughEditorViewStates = editorViewStateMemento[resource.toString()];
@@ -504,18 +519,16 @@ export class WalkThroughPart extends BaseEditor {
 		}
 	}
 
-	private loadTextEditorViewState(resource: URI) {
+	private loadTextEditorViewState(resource: URI): IWalkThroughEditorViewState {
 		const memento = this.getMemento(this.storageService, Scope.WORKSPACE);
 		const editorViewStateMemento = memento[WALK_THROUGH_EDITOR_VIEW_STATE_PREFERENCE_KEY];
 		if (editorViewStateMemento) {
 			const fileViewState: IWalkThroughEditorViewStates = editorViewStateMemento[resource.toString()];
 			if (fileViewState) {
-				const state: IWalkThroughEditorViewState = fileViewState[this.position];
-				if (state) {
-					this.scrollbar.updateState(state.viewState);
-				}
+				return fileViewState[this.position];
 			}
 		}
+		return {};
 	}
 
 	public clearInput(): void {

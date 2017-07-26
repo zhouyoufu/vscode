@@ -31,7 +31,7 @@ export class EditorWalkThroughAction extends Action {
 	public run(): TPromise<void> {
 		const uri = URI.parse(require.toUrl('./vs_code_editor_walkthrough.md'))
 			.with({ scheme: Schemas.walkThrough });
-		const input = this.instantiationService.createInstance(WalkThroughInput, localize('editorWalkThrough.title', "Interactive Playground"), '', uri, /* telemetryFrom */ null, /* onReady */ null);
+		const input = this.instantiationService.createInstance(WalkThroughInput, localize('editorWalkThrough.title', "Interactive Playground"), '', uri, /* telemetryFrom */ null, /* onReady */ null, /* getExtraState */ null, /* setExtraState */ null);
 		return this.editorService.openEditor(input, { pinned: true }, Position.ONE)
 			.then(() => void (0));
 	}

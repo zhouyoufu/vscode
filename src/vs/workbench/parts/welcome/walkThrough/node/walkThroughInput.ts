@@ -58,6 +58,8 @@ export class WalkThroughInput extends EditorInput {
 		private resource: URI,
 		private telemetryFrom: string,
 		public readonly onReady: (container: HTMLElement) => void,
+		public readonly getExtraState: () => any,
+		public readonly setExtraState: (state: any) => void,
 		@ITelemetryService private telemetryService: ITelemetryService,
 		@ILifecycleService lifecycleService: ILifecycleService,
 		@ITextModelService private textModelResolverService: ITextModelService

@@ -151,6 +151,16 @@
 	width:100%;
 }
 
+.monaco-workbench > .part.editor > .content .welcomePage .commands li button {
+	position: relative;
+}
+
+.monaco-workbench > .part.editor > .content .welcomePage .commands li button > .actions {
+	position: absolute;
+	bottom: 2px;
+	right: 4px;
+}
+
 .monaco-workbench > .part.editor > .content .welcomePage .commands li button h3 {
 	font-weight: normal;
 	font-size: 1em;

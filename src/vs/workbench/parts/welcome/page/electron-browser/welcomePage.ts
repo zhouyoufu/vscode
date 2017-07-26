@@ -7,6 +7,10 @@
 import 'vs/css!./welcomePage';
 import URI from 'vs/base/common/uri';
 import * as path from 'path';
+import * as url from 'url';
+import * as http from 'http';
+import * as https from 'https';
+import * as objects from 'vs/base/common/objects';
 import * as arrays from 'vs/base/common/arrays';
 import { WalkThroughInput } from 'vs/workbench/parts/welcome/walkThrough/node/walkThroughInput';
 import { IWorkbenchContribution } from 'vs/workbench/common/contributions';
@@ -40,6 +44,10 @@ import { getExtraColor } from 'vs/workbench/parts/welcome/walkThrough/node/walkT
 import { IExtensionsWorkbenchService } from 'vs/workbench/parts/extensions/common/extensions';
 import { IStorageService } from 'vs/platform/storage/common/storage';
 import { IWorkspaceIdentifier, getWorkspaceLabel, ISingleFolderWorkspaceIdentifier, isSingleFolderWorkspaceIdentifier } from "vs/platform/workspaces/common/workspaces";
+import { escape } from 'vs/base/common/strings';
+import { Registry } from 'vs/platform/registry/common/platform';
+import { IWorkbenchActionRegistry, Extensions as ActionExtensions } from 'vs/workbench/common/actionRegistry';
+import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
 
 used();
 
@@ -179,6 +187,7 @@ class WelcomePage {
 		@IExtensionGalleryService private extensionGalleryService: IExtensionGalleryService,
 		@IExtensionManagementService private extensionManagementService: IExtensionManagementService,
 		@IExtensionTipsService private tipsService: IExtensionTipsService,
+		@IKeybindingService private keybindingService: IKeybindingService,
 		@IExtensionsWorkbenchService private extensionsWorkbenchService: IExtensionsWorkbenchService,
 		@ILifecycleService lifecycleService: ILifecycleService,
 		@IThemeService private themeService: IThemeService,
@@ -196,7 +205,7 @@ class WelcomePage {
 				scheme: Schemas.walkThrough,
 				query: JSON.stringify({ moduleId: 'vs/workbench/parts/welcome/page/electron-browser/vs_code_welcome_page' })
 			});
-		const input = this.instantiationService.createInstance(WalkThroughInput, localize('welcome.title', "Welcome"), '', uri, telemetryFrom, container => this.onReady(container, recentlyOpened, installedExtensions));
+		const input = this.instantiationService.createInstance(WalkThroughInput, localize('welcome.title', "Welcome"), '', uri, telemetryFrom, container => this.onReady(container, recentlyOpened, installedExtensions), () => this.getMemento(), state => this.setMemento(state));
 		this.editorService.openEditor(input, { pinned: true }, Position.ONE)
 			.then(null, onUnexpectedError);
 	}
@@ -296,6 +305,99 @@ class WelcomePage {
 				}
 			};
 		}));
+
+		this.commandSuggestions(container);
+	}
+
+	private commandSuggestionFallback = 'workbench.action.showCommands';
+	private commandSuggestionId = this.commandSuggestionFallback;
+	private commandSuggestionIds = [];
+	private commandSuggestionLastRetrieval = 0;
+
+	private getMemento() {
+		return {
+			commandSuggestions: {
+				currentId: this.commandSuggestionId,
+				commandIds: this.commandSuggestionIds,
+				lastRetrieval: this.commandSuggestionLastRetrieval
+			}
+		};
+	}
+
+	private setMemento(state: any) {
+		const suggestions = state && state.commandSuggestions;
+		if (suggestions) {
+			this.commandSuggestionId = suggestions.currentId;
+			this.commandSuggestionIds = suggestions.commandIds;
+			this.commandSuggestionLastRetrieval = suggestions.lastRetrieval;
+		}
+	}
+
+	private commandSuggestions(container: HTMLElement) {
+		const tipButton = container.querySelector('.commandSuggestions button');
+		tipButton.addEventListener('click', e => {
+			const target = e.target as HTMLElement;
+			if (target instanceof HTMLAnchorElement && target.href) {
+				return;
+			}
+			const previous = target.classList.contains('previous');
+			this.telemetryService.publicLog('workbenchActionExecuted', {
+				id: previous ? 'previousCommandSuggestion' : 'nextCommandSuggestion',
+				from: telemetryFrom
+			});
+			update(previous ? -1 : 1);
+			e.preventDefault();
+			e.stopPropagation();
+		});
+
+		const update = (change = 0) => {
+			const registry = Registry.as<IWorkbenchActionRegistry>(ActionExtensions.WorkbenchActions);
+			const tips = this.commandSuggestionIds
+				.filter(tip => !!registry.getWorkbenchAction(tip))
+				.slice(0, 10);
+			if (!tips.length) {
+				tips.push(this.commandSuggestionFallback);
+			}
+			let i = tips.indexOf(this.commandSuggestionId);
+			if (i === -1) {
+				i = 0;
+			} else {
+				i = (i + tips.length + change) % tips.length;
+			}
+			this.commandSuggestionId = tips[i];
+
+			const descriptor = registry.getWorkbenchAction(this.commandSuggestionId);
+			const keybinding = this.keybindingService.lookupKeybinding(this.commandSuggestionId);
+			const tipSpan = container.querySelector('.commandSuggestions .detail');
+			if (keybinding) {
+				tipSpan.innerHTML = escape(localize('welcomePage.commandSuggestionsDetail', "{0} ({1})", descriptor.label))
+					.replace('{1}', `<span class="shortcut">${escape(keybinding.getLabel())}</span>`);
+			} else {
+				tipSpan.innerHTML = escape(localize('welcomePage.commandSuggestionsDetail', "{0} ({1})", descriptor.label))
+					.replace('{1}', `<a href="command:workbench.action.openGlobalKeybindings">${escape(localize('welcomePage.addShortcut', "Add Shortcut"))}</a>`);
+			}
+		};
+		update();
+
+		if (!this.commandSuggestionLastRetrieval || Date.now() - this.commandSuggestionLastRetrieval > 24 * 60 * 60 * 1000) {
+			this.loadCommandSuggestions()
+				.catch(() => {
+					// ignore (could be offline)
+				});
+		}
+	}
+
+	private async loadCommandSuggestions(): Promise<void> {
+		if (!this.environmentService.isBuilt) {
+			return;
+		}
+		const info = await this.telemetryService.getTelemetryInfo();
+		const machineId = info.machineId;
+		const body = await getURL(`http://vscode-commandsuggestions.westus.cloudapp.azure.com/command_suggestions?machine_id=${machineId}`);
+		const result = JSON.parse(body);
+		this.commandSuggestionIds = result.suggestions
+			.map(s => s.command);
+		this.commandSuggestionLastRetrieval = Date.now();
 	}
 
 	private addExtensionList(container: HTMLElement, listSelector: string, suggestions: ExtensionSuggestion[], strings: Strings) {
@@ -471,6 +573,29 @@ class WelcomePage {
 	dispose(): void {
 		this.disposables = dispose(this.disposables);
 	}
+}
+
+export function getURL(aUrl: string): Promise<string> {
+	return new Promise((resolve, reject) => {
+		const parsedUrl = url.parse(aUrl);
+		const get = parsedUrl.protocol === 'https:' ? https.get : http.get;
+		const options = objects.assign({ rejectUnauthorized: false }, parsedUrl) as https.RequestOptions;
+
+		get(options, response => {
+			let responseData = '';
+			response.on('data', chunk => responseData += chunk);
+			response.on('end', () => {
+				// Sometimes the 'error' event is not fired. Double check here.
+				if (response.statusCode === 200) {
+					resolve(responseData);
+				} else {
+					reject(new Error(responseData.trim()));
+				}
+			});
+		}).on('error', e => {
+			reject(e);
+		});
+	});
 }
 
 // theming
