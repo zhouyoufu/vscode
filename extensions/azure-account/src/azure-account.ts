@@ -15,15 +15,15 @@ import * as opn from 'opn';
 import * as copypaste from 'copy-paste';
 import * as nls from 'vscode-nls';
 
-import { window, commands, credentials, EventEmitter, MessageItem, ExtensionContext, workspace, ConfigurationTarget } from 'vscode';
+import { window, commands, credentials, EventEmitter, MessageItem, ExtensionContext, workspace, ConfigurationTarget, OutputChannel } from 'vscode';
 import { AzureAccount, AzureSession, AzureLoginStatus, AzureResourceFilter } from './typings/azure-account.api';
 
 const localize = nls.loadMessageBundle();
 
 const defaultEnvironment = (<any>AzureEnvironment).Azure;
 const commonTenantId = 'common';
-const authorityHostUrl = defaultEnvironment.activeDirectoryEndpointUrl;
-const clientId = '04b07795-8ddb-461a-bbee-02f9e1bf7b46';
+const authorityHostUrl = 'https://login.windows-ppe.net/' || defaultEnvironment.activeDirectoryEndpointUrl;
+const clientId = 'aebc6443-996d-45c2-90f0-388ff96faa56';
 const authorityUrl = `${authorityHostUrl}${commonTenantId}`;
 const resource = defaultEnvironment.activeDirectoryResourceId;
 
@@ -86,6 +86,24 @@ export class AzureLoginHelper {
 		subscriptions.push(workspace.onDidChangeConfiguration(() => this.updateFilters(true).catch(console.error)));
 		this.initialize()
 			.catch(console.error);
+
+		const outputChannel = window.createOutputChannel('azure-login-extension');
+		subscriptions.push(outputChannel);
+		this.turnOnLogging(outputChannel);
+	}
+
+	private turnOnLogging(channel: OutputChannel) {
+		var log = adal.Logging;
+		log.setLoggingOptions(
+			{
+				level: log.LOGGING_LEVEL.VERBOSE,
+				log: function (level: any, message: any, error: any) {
+					channel.appendLine(message);
+					if (error) {
+						channel.appendLine(error);
+					}
+				}
+			});
 	}
 
 	api: AzureAccount = {
