@@ -22,6 +22,10 @@ export class ScreenCapturer {
 			return;
 		}
 
+		if (!!true) {
+			return;
+		}
+
 		const screenshotPath = path.join(
 			this.screenshotsDirPath,
 			`${ScreenCapturer.counter++}-${sanitize(name)}.png`
