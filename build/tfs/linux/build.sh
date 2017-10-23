@@ -18,8 +18,8 @@ echo "machine monacotools.visualstudio.com password $VSO_PAT" > ~/.netrc
 step "Install dependencies" \
 	npm install --arch=$ARCH --unsafe-perm
 
-step "Hygiene" \
-	npm run gulp -- hygiene
+# step "Hygiene" \
+# 	npm run gulp -- hygiene
 
 step "Mix in repository from vscode-distro" \
 	npm run gulp -- mixin
@@ -36,8 +36,8 @@ step "Build minified" \
 # step "Create loader snapshot"
 # 	node build/lib/snapshotLoader.js --arch=$ARCH
 
-step "Run unit tests" \
-	./scripts/test.sh --build --reporter dot
+# step "Run unit tests" \
+# 	./scripts/test.sh --build --reporter dot
 
 function smoketest {
 	id -u testuser &>/dev/null || (useradd -m testuser; chpasswd <<< testuser:testpassword)
@@ -56,5 +56,5 @@ function smoketest {
 step "Run smoke test" \
 	smoketest
 
-step "Publish release" \
-	./build/tfs/linux/release.sh
+# step "Publish release" \
+# 	./build/tfs/linux/release.sh

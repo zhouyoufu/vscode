@@ -19,9 +19,9 @@ step "Install dependencies" {
   exec { & npm install }
 }
 
-step "Hygiene" {
-  exec { & npm run gulp -- hygiene }
-}
+# step "Hygiene" {
+#   exec { & npm run gulp -- hygiene }
+# }
 
 $env:VSCODE_MIXIN_PASSWORD = $mixinPassword
 step "Mix in repository from vscode-distro" {
@@ -44,9 +44,9 @@ step "Build minified" {
 #   exec { & 	node build\lib\snapshotLoader.js --arch=$global:arch }
 # }
 
-step "Run unit tests" {
-  exec { & .\scripts\test.bat --build --reporter dot }
-}
+# step "Run unit tests" {
+#   exec { & .\scripts\test.bat --build --reporter dot }
+# }
 
 # step "Run integration tests" {
 #   exec { & .\scripts\test-integration.bat }
@@ -60,3 +60,5 @@ step "Run smoke test" {
 }
 
 done
+
+exit 1

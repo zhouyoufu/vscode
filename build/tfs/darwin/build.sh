@@ -16,8 +16,8 @@ echo "machine monacotools.visualstudio.com password $VSO_PAT" > ~/.netrc
 step "Install dependencies" \
 	npm install
 
-step "Hygiene" \
-	npm run gulp -- hygiene
+# step "Hygiene" \
+# 	npm run gulp -- hygiene
 
 step "Mix in repository from vscode-distro" \
 	npm run gulp -- mixin
@@ -31,11 +31,11 @@ step "Build minified & upload source maps" \
 # step "Create loader snapshot"
 #	node build/lib/snapshotLoader.js
 
-step "Run unit tests" \
-	./scripts/test.sh --build --reporter dot
+# step "Run unit tests" \
+# 	./scripts/test.sh --build --reporter dot
 
-step "Run integration tests" \
-	./scripts/test-integration.sh
+# step "Run integration tests" \
+# 	./scripts/test-integration.sh
 
 function smoketest {
 	ARTIFACTS="$AGENT_BUILDDIRECTORY/smoketest-artifacts"
@@ -48,8 +48,8 @@ function smoketest {
 step "Run smoke test" \
 	smoketest
 
-step "Publish release" \
-	./build/tfs/darwin/release.sh
+# step "Publish release" \
+# 	./build/tfs/darwin/release.sh
 
-step "Generate and upload configuration.json" \
-	npm run gulp -- upload-vscode-configuration
+# step "Generate and upload configuration.json" \
+# 	npm run gulp -- upload-vscode-configuration
