@@ -166,7 +166,10 @@ export class SpectronApplication {
 		// and it handles gracefully when two instances use the same port number
 		// This works, but when one of the instances quits, it takes down
 		// chrome driver with it, leaving the other instance in DISPAIR!!! :(
+
+		console.log('finding free port');
 		const port = await findFreePort();
+		console.log('found free port');
 		const opts: any = {
 			path: this._electronPath,
 			port,
@@ -198,9 +201,15 @@ export class SpectronApplication {
 			opts.webdriverLogPath = webdriverLogsPath;
 		}
 
+		console.log('creating application');
 		this.spectron = new Application(opts);
+
+		console.log('starting');
 		await this.spectron.start();
 
+		console.log('application started');
+
+		console.log('collecting logs');
 		if (testsuiteRootPath) {
 			// Collect logs
 			const mainProcessLogPath = path.join(testsuiteRootPath, 'main.log');
@@ -234,9 +243,11 @@ export class SpectronApplication {
 			};
 		}
 
+		console.log('logs collected');
 		this._screenCapturer = new ScreenCapturer(this.spectron, screenshotsDirPath);
 		this._client = new SpectronClient(this.spectron, this);
 		this._workbench = new Workbench(this);
+		console.log('done');
 	}
 
 	private async checkWindowReady(): Promise<any> {
