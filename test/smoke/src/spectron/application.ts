@@ -93,11 +93,17 @@ export class SpectronApplication {
 	}
 
 	async start(testSuiteName: string, codeArgs: string[] = [], env = process.env): Promise<any> {
+		console.log('application start');
 		await this.retrieveKeybindings();
+		console.log('keybindings retrieved');
 		cp.execSync('git checkout .', { cwd: WORKSPACE_PATH });
+		console.log('git checked out');
 		await this.startApplication(testSuiteName, codeArgs, env);
+		console.log('application started');
 		await this.checkWindowReady();
+		console.log('window ready');
 		await this.waitForWelcome();
+		console.log('welcome ready');
 		await this.screenCapturer.capture('Application started');
 	}
 
