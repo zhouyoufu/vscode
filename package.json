@@ -1,7 +1,7 @@
 {
   "name": "code-oss-dev",
   "version": "1.19.0",
-  "electronVersion": "1.8.2-beta.1",
+  "electronVersion": "1.8.1",
   "distro": "6be5539c8022d6e13554fe648525c1a8bff700d9",
   "author": {
     "name": "Microsoft Corporation"
