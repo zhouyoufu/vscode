@@ -82,7 +82,7 @@ export class Resource implements SourceControlResourceState {
 	get original(): Uri { return this._resourceUri; }
 	get renameResourceUri(): Uri | undefined { return this._renameResourceUri; }
 
-	private static Icons = {
+	private static Icons: any = {
 		light: {
 			Modified: getIconUri('status-modified', 'light'),
 			Added: getIconUri('status-added', 'light'),
@@ -470,6 +470,7 @@ export class Repository implements Disposable {
 		onRelevantGitChange(this._onDidChangeRepository.fire, this._onDidChangeRepository, this.disposables);
 
 		this._sourceControl = scm.createSourceControl('git', 'Git', Uri.file(repository.root));
+		this._sourceControl.inputBox.placeholder = localize('commitMessage', "Message (press {0} to commit)");
 		this._sourceControl.acceptInputCommand = { command: 'git.commitWithInput', title: localize('commit', "Commit"), arguments: [this._sourceControl] };
 		this._sourceControl.quickDiffProvider = this;
 		this.disposables.push(this._sourceControl);
@@ -650,10 +651,9 @@ export class Repository implements Disposable {
 		await this.run(Operation.Push, () => this.repository.push(remote, undefined, false, true));
 	}
 
-	@throttle
-	async sync(): Promise<void> {
+	private async _sync(rebase: boolean): Promise<void> {
 		await this.run(Operation.Sync, async () => {
-			await this.repository.pull();
+			await this.repository.pull(rebase);
 
 			const shouldPush = this.HEAD && typeof this.HEAD.ahead === 'number' ? this.HEAD.ahead > 0 : true;
 
@@ -661,6 +661,16 @@ export class Repository implements Disposable {
 				await this.repository.push();
 			}
 		});
+	}
+
+	@throttle
+	sync(): Promise<void> {
+		return this._sync(false);
+	}
+
+	@throttle
+	async syncRebase(): Promise<void> {
+		return this._sync(true);
 	}
 
 	async show(ref: string, filePath: string): Promise<string> {
@@ -724,7 +734,7 @@ export class Repository implements Disposable {
 
 				const child = this.repository.stream(['check-ignore', ...filePaths]);
 
-				const onExit = exitCode => {
+				const onExit = (exitCode: number) => {
 					if (exitCode === 1) {
 						// nothing ignored
 						resolve(new Set<string>());
