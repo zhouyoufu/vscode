@@ -7,7 +7,7 @@
 import Severity from 'vs/base/common/severity';
 import * as modes from 'vs/editor/common/modes';
 import * as types from './extHostTypes';
-import { Position as EditorPosition } from 'vs/platform/editor/common/editor';
+import { Position as EditorPosition, ITextEditorOptions } from 'vs/platform/editor/common/editor';
 import { IDecorationOptions, EndOfLineSequence } from 'vs/editor/common/editorCommon';
 import * as vscode from 'vscode';
 import URI from 'vs/base/common/uri';
@@ -222,6 +222,35 @@ export const TextEdit = {
 		return result;
 	}
 };
+
+export namespace WorkspaceEdit {
+	export function from(value: vscode.WorkspaceEdit): modes.WorkspaceEdit {
+		const result: modes.WorkspaceEdit = { edits: [] };
+		for (let entry of value.entries()) {
+			let [uri, textEdits] = entry;
+			for (let textEdit of textEdits) {
+				result.edits.push({
+					resource: uri,
+					newText: textEdit.newText,
+					range: fromRange(textEdit.range)
+				});
+			}
+		}
+		return result;
+	}
+
+	export function fromTextEdits(uri: vscode.Uri, textEdits: vscode.TextEdit[]): modes.WorkspaceEdit {
+		const result: modes.WorkspaceEdit = { edits: [] };
+		for (let textEdit of textEdits) {
+			result.edits.push({
+				resource: uri,
+				newText: textEdit.newText,
+				range: fromRange(textEdit.range)
+			});
+		}
+		return result;
+	}
+}
 
 
 export namespace SymbolKind {
@@ -542,4 +571,16 @@ export namespace ProgressLocation {
 		}
 		return undefined;
 	}
+}
+
+export function toTextEditorOptions(options?: vscode.TextDocumentShowOptions): ITextEditorOptions {
+	if (options) {
+		return {
+			pinned: typeof options.preview === 'boolean' ? !options.preview : undefined,
+			preserveFocus: options.preserveFocus,
+			selection: typeof options.selection === 'object' ? fromRange(options.selection) : undefined
+		} as ITextEditorOptions;
+	}
+
+	return undefined;
 }
