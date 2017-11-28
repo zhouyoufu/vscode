@@ -6,6 +6,12 @@
 'use strict';
 
 import * as vscode from 'vscode';
+import fs = require('fs');
+import os = require('os');
+import path = require('path');
+import crypto = require('crypto');
+
+var archiver = require('archiver');
 
 export function activate(context: vscode.ExtensionContext) {
 	if (vscode.env.loggingDirectory) {
@@ -22,7 +28,7 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 
 			if (selection === 'Upload') {
-				// Something
+				upload();
 			}
 
 			if (selection === 'Learn More') {
@@ -48,4 +54,31 @@ export default class LoggingStatus {
 	dispose() {
 		this.logStatusBarEntry.dispose();
 	}
+}
+
+async function upload() {
+	const zip = await createLogZip();
+	return await vscode.commands.executeCommand('_workbench.action.files.revealInOS', vscode.Uri.parse(zip));
+}
+
+function createLogZip(): Promise<string> {
+	return new Promise<string>((resolve, reject) => {
+		const outFile = path.join(os.tmpdir(), 'vscode-log-out-' + crypto.randomBytes(4).readUInt32LE(0) + '.zip');
+		var output = fs.createWriteStream(outFile);
+		var archive = archiver('zip');
+
+		output.on('close', function () {
+			console.log(archive.pointer() + ' total bytes');
+			console.log('archiver has been finalized and the output file descriptor has closed.');
+			resolve(outFile);
+		});
+
+		archive.on('error', function (err: any) {
+			reject(err);
+		});
+
+		archive.pipe(output);
+		archive.directory(vscode.env.loggingDirectory, '');
+		archive.finalize();
+	});
 }
