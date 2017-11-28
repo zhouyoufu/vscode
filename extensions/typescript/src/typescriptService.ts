@@ -16,6 +16,7 @@ export interface ITypeScriptServiceClientHost {
 	semanticDiagnosticsReceived(event: Proto.DiagnosticEvent): void;
 	configFileDiagnosticsReceived(event: Proto.ConfigFileDiagnosticEvent): void;
 	populateService(): void;
+	loggingDirectory: string | undefined;
 }
 
 

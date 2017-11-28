@@ -161,7 +161,7 @@ export function activate(context: ExtensionContext): void {
 		let clientHost: TypeScriptServiceClientHost | undefined;
 		return () => {
 			if (!clientHost) {
-				clientHost = new TypeScriptServiceClientHost(standardLanguageDescriptions, context.workspaceState, plugins, commandManager);
+				clientHost = new TypeScriptServiceClientHost(standardLanguageDescriptions, context.workspaceState, plugins, commandManager, context.loggingDirectory);
 				context.subscriptions.push(clientHost);
 
 				const host = clientHost;
@@ -435,7 +435,8 @@ class TypeScriptServiceClientHost implements ITypeScriptServiceClientHost {
 		descriptions: LanguageDescription[],
 		workspaceState: Memento,
 		plugins: TypeScriptServerPlugin[],
-		private readonly commandManager: CommandManager
+		private readonly commandManager: CommandManager,
+		public loggingDirectory: string | undefined
 	) {
 		const handleProjectCreateOrDelete = () => {
 			this.client.execute('reloadProjects', null, false);

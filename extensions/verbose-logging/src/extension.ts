@@ -15,8 +15,9 @@ import * as azure from 'azure-storage';
 var archiver = require('archiver');
 
 export function activate(context: vscode.ExtensionContext) {
-	if (vscode.env.loggingDirectory) {
-		context.subscriptions.push(new LoggingStatus());
+	const loggingDir = vscode.env.globalLoggingDirectory;
+	if (loggingDir) {
+		context.subscriptions.push(new LoggingStatus(loggingDir));
 
 		context.subscriptions.push(vscode.commands.registerCommand('verbose-logging.stopLogging', async () => {
 			const selection = await vscode.window.showInformationMessage('Upload or preview???', 'Preview', 'Upload', 'Learn More');
@@ -25,12 +26,12 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 
 			if (selection === 'Preview') {
-				await vscode.commands.executeCommand('_workbench.action.files.revealInOS', vscode.Uri.parse(vscode.env.loggingDirectory!));
+				await vscode.commands.executeCommand('_workbench.action.files.revealInOS', vscode.Uri.parse(loggingDir));
 			}
 
 			if (selection === 'Upload') {
 				try {
-					const blobName = await upload();
+					const blobName = await upload(loggingDir!);
 					const message = `Upload successful! Your log ID: ${blobName}`;
 					vscode.window.showInformationMessage(message);
 					console.log(message);
@@ -51,10 +52,10 @@ export function activate(context: vscode.ExtensionContext) {
 export default class LoggingStatus {
 	private logStatusBarEntry: vscode.StatusBarItem;
 
-	constructor() {
+	constructor(logPath: string) {
 		this.logStatusBarEntry = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, Number.MIN_VALUE);
 		this.logStatusBarEntry.text = 'LOGGING MODE';
-		this.logStatusBarEntry.tooltip = vscode.env.loggingDirectory;
+		this.logStatusBarEntry.tooltip = logPath;
 		this.logStatusBarEntry.command = 'verbose-logging.stopLogging';
 
 		this.logStatusBarEntry.show();
@@ -67,8 +68,8 @@ export default class LoggingStatus {
 
 const CONTAINER_NAME = 'logs';
 
-async function upload(): Promise<string> {
-	const zipPath = await createLogZip();
+async function upload(logPath: string): Promise<string> {
+	const zipPath = await createLogZip(logPath);
 	return new Promise<string>((resolve, reject) => {
 		const conString = fs.readFileSync(path.join(__dirname, '../keys')).toString();
 		const blobService = azure.createBlobService(conString);
@@ -90,7 +91,7 @@ async function upload(): Promise<string> {
 
 }
 
-function createLogZip(): Promise<string> {
+function createLogZip(logPath: string): Promise<string> {
 	return new Promise<string>((resolve, reject) => {
 		const outFile = path.join(os.tmpdir(), 'vscode-log-out-' + crypto.randomBytes(4).readUInt32LE(0) + '.zip');
 		var output = fs.createWriteStream(outFile);
@@ -107,7 +108,7 @@ function createLogZip(): Promise<string> {
 		});
 
 		archive.pipe(output);
-		archive.directory(vscode.env.loggingDirectory, '');
+		archive.directory(logPath, '');
 		archive.finalize();
 	});
 }

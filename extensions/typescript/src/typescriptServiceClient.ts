@@ -863,7 +863,7 @@ export default class TypeScriptServiceClient implements ITypeScriptServiceClient
 		if (this.apiVersion.has222Features()) {
 			if (this._configuration.tsServerLogLevel !== TsServerLogLevel.Off) {
 				try {
-					const logDir = env.loggingDirectory || fs.mkdtempSync(path.join(os.tmpdir(), `vscode-tsserver-log-`));
+					const logDir = this.host.loggingDirectory || fs.mkdtempSync(path.join(os.tmpdir(), `vscode-tsserver-log-`));
 					this.tsServerLogFile = path.join(logDir, `tsserver.log`);
 					this.info(`TSServer log file: ${this.tsServerLogFile}`);
 				} catch (e) {

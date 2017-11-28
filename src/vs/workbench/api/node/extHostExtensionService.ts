@@ -18,7 +18,7 @@ import { IExtensionMemento, ExtensionsActivator, ActivatedExtension, IExtensionA
 import { ExtHostThreadService } from 'vs/workbench/services/thread/node/extHostThreadService';
 import { ExtHostConfiguration } from 'vs/workbench/api/node/extHostConfiguration';
 import { ExtHostWorkspace } from 'vs/workbench/api/node/extHostWorkspace';
-import { realpath } from 'fs';
+import { realpath, existsSync, mkdirSync } from 'fs';
 import { TernarySearchTree } from 'vs/base/common/map';
 import { Barrier } from 'vs/base/common/async';
 
@@ -119,6 +119,8 @@ export class ExtHostExtensionService implements ExtHostExtensionServiceShape {
 	private readonly _proxy: MainThreadExtensionServiceShape;
 	private _activator: ExtensionsActivator;
 	private _extensionPathIndex: TPromise<TernarySearchTree<IExtensionDescription>>;
+	private _loggingDirectory: string | undefined;
+
 	/**
 	 * This class is constructed manually because it is a service, so it doesn't use any ctor injection
 	 */
@@ -135,6 +137,7 @@ export class ExtHostExtensionService implements ExtHostExtensionServiceShape {
 		this._storagePath = new ExtensionStoragePath(initData.workspace, initData.environment);
 		this._proxy = this._threadService.get(MainContext.MainThreadExtensionService);
 		this._activator = null;
+		this._loggingDirectory = initData.loggingDirectory;
 
 		// initialize API first (i.e. do not release barrier until the API is initialized)
 		const apiFactory = createApiFactory(initData, threadService, extHostWorkspace, extHostConfiguration, this);
@@ -328,13 +331,26 @@ export class ExtHostExtensionService implements ExtHostExtensionServiceShape {
 			workspaceState.whenReady,
 			this._storagePath.whenReady
 		]).then(() => {
+			const extensionLoggingPath = this._loggingDirectory && join(this._loggingDirectory, extensionDescription.id);
+
 			return Object.freeze(<IExtensionContext>{
 				globalState,
 				workspaceState,
 				subscriptions: [],
 				get extensionPath() { return extensionDescription.extensionFolderPath; },
 				storagePath: this._storagePath.value(extensionDescription),
-				asAbsolutePath: (relativePath: string) => { return join(extensionDescription.extensionFolderPath, relativePath); }
+				asAbsolutePath: (relativePath: string) => { return join(extensionDescription.extensionFolderPath, relativePath); },
+				get loggingDirectory() {
+					if (!extensionLoggingPath) {
+						return undefined;
+					}
+
+					if (!existsSync(extensionLoggingPath)) {
+						mkdirSync(extensionLoggingPath);
+					}
+
+					return extensionLoggingPath;
+				}
 			});
 		});
 	}

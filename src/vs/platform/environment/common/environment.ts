@@ -48,7 +48,7 @@ export interface ParsedArgs {
 	'disable-updates'?: string;
 	'disable-crash-reporter'?: string;
 	'skip-add-to-recently-opened'?: boolean;
-	'verbose-logging'?: boolean;
+	'verbose-logging'?: boolean | string[];
 }
 
 export const IEnvironmentService = createDecorator<IEnvironmentService>('environmentService');

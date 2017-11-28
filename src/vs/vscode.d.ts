@@ -3930,6 +3930,12 @@ declare module 'vscode' {
 		 * [`globalState`](#ExtensionContext.globalState) to store key value data.
 		 */
 		storagePath: string | undefined;
+
+		/**
+		 * The absolute file path of a directory where the extension can write its log files.
+		 * Undefined if logging is disabled.
+		 */
+		loggingDirectory: string | undefined;
 	}
 
 	/**
@@ -4369,7 +4375,7 @@ declare module 'vscode' {
 		/**
 		 *
 		 */
-		export let loggingDirectory: string | undefined;
+		export let globalLoggingDirectory: string | undefined;
 	}
 
 	/**

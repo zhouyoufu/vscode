@@ -193,7 +193,7 @@ export function createApiFactory(
 			get appName() { return product.nameLong; },
 			get appRoot() { return initData.environment.appRoot; },
 
-			get loggingDirectory() { return initData.loggingDirectory; }
+			get globalLoggingDirectory() { return initData.loggingDirectory; }
 		});
 
 		// namespace: extensions
