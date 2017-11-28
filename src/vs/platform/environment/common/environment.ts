@@ -48,6 +48,7 @@ export interface ParsedArgs {
 	'disable-updates'?: string;
 	'disable-crash-reporter'?: string;
 	'skip-add-to-recently-opened'?: boolean;
+	'verbose-logging'?: boolean;
 }
 
 export const IEnvironmentService = createDecorator<IEnvironmentService>('environmentService');
@@ -115,4 +116,6 @@ export interface IEnvironmentService {
 	installSourcePath: string;
 	disableUpdates: boolean;
 	disableCrashReporter: boolean;
+
+	loggingDirectory: string | undefined;
 }

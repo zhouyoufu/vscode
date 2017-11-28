@@ -4365,6 +4365,11 @@ declare module 'vscode' {
 		 * @readonly
 		 */
 		export let sessionId: string;
+
+		/**
+		 *
+		 */
+		export let loggingDirectory: string | undefined;
 	}
 
 	/**

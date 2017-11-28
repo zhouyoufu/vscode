@@ -75,6 +75,7 @@ export interface IInitData {
 	extensions: IExtensionDescription[];
 	configuration: IConfigurationInitData;
 	telemetryInfo: ITelemetryInfo;
+	loggingDirectory: string | undefined;
 }
 
 export interface IConfigurationInitData extends IConfigurationData {

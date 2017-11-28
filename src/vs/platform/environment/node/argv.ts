@@ -52,7 +52,8 @@ const options: minimist.Opts = {
 		'disable-telemetry',
 		'disable-updates',
 		'disable-crash-reporter',
-		'skip-add-to-recently-opened'
+		'skip-add-to-recently-opened',
+		'verbose-logging'
 	],
 	alias: {
 		add: 'a',
