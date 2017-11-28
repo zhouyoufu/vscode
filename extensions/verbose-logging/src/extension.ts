@@ -12,7 +12,7 @@ export function activate(context: vscode.ExtensionContext) {
 		context.subscriptions.push(new LoggingStatus());
 
 		context.subscriptions.push(vscode.commands.registerCommand('verbose-logging.stopLogging', async () => {
-			const selection = await vscode.window.showInformationMessage('Upload or preview???', 'Preview', 'Upload');
+			const selection = await vscode.window.showInformationMessage('Upload or preview???', 'Preview', 'Upload', 'Learn More');
 			if (!selection) {
 				return;
 			}
@@ -23,6 +23,11 @@ export function activate(context: vscode.ExtensionContext) {
 
 			if (selection === 'Upload') {
 				// Something
+			}
+
+			if (selection === 'Learn More') {
+				const doc = await vscode.workspace.openTextDocument({ language: 'markdown', content: 'Info about logging!' });
+				vscode.window.showTextDocument(doc);
 			}
 		}));
 	}
