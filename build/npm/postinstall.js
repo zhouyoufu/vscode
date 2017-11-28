@@ -41,7 +41,8 @@ const extensions = [
 	'merge-conflict',
 	'emmet',
 	'npm',
-	'jake'
+	'jake',
+	'verbose-logging'
 ];
 
 extensions.forEach(extension => yarnInstall(`extensions/${extension}`));

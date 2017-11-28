@@ -1,0 +1,23 @@
+{
+	"name": "vscode-verbose-logging",
+	"description": "Tools for logging",
+	"version": "0.0.1",
+	"publisher": "vscode",
+	"enableProposedApi": true,
+	"private": true,
+	"engines": {
+		"vscode": "*"
+	},
+	"contributes": {},
+	"activationEvents": [
+		"*"
+	],
+	"main": "./out/extension.js",
+	"scripts": {
+		"compile": "node ./node_modules/vscode/bin/compile -watch -p ./"
+	},
+	"devDependencies": {
+		"@types/node": "7.0.43",
+		"vscode": "1.1.5"
+	}
+}
