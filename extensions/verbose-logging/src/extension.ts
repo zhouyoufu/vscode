@@ -10,6 +10,7 @@ import fs = require('fs');
 import os = require('os');
 import path = require('path');
 import crypto = require('crypto');
+import * as azure from 'azure-storage';
 
 var archiver = require('archiver');
 
@@ -28,7 +29,15 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 
 			if (selection === 'Upload') {
-				upload();
+				try {
+					const blobName = await upload();
+					const message = `Upload successful! Your log ID: ${blobName}`;
+					vscode.window.showInformationMessage(message);
+					console.log(message);
+				} catch (e) {
+					vscode.window.showErrorMessage(`Upload failed: ${e.message}`);
+					console.error(e);
+				}
 			}
 
 			if (selection === 'Learn More') {
@@ -56,9 +65,29 @@ export default class LoggingStatus {
 	}
 }
 
-async function upload() {
-	const zip = await createLogZip();
-	return await vscode.commands.executeCommand('_workbench.action.files.revealInOS', vscode.Uri.parse(zip));
+const CONTAINER_NAME = 'logs';
+
+async function upload(): Promise<string> {
+	const zipPath = await createLogZip();
+	return new Promise<string>((resolve, reject) => {
+		const conString = fs.readFileSync(path.join(__dirname, '../keys')).toString();
+		const blobService = azure.createBlobService(conString);
+
+		const blobName = crypto.randomBytes(4).readUInt32LE(0) + '';
+		const metadata = {
+			machineID: vscode.env.machineId
+		};
+
+		blobService.createBlockBlobFromLocalFile(CONTAINER_NAME, blobName, zipPath, { metadata }, (error: Error) => {
+			if (error) {
+				reject(error);
+				return;
+			}
+
+			resolve(blobName);
+		});
+	});
+
 }
 
 function createLogZip(): Promise<string> {
