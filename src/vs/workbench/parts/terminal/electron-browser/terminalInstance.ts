@@ -35,6 +35,9 @@ import { IHistoryService } from 'vs/workbench/services/history/common/history';
 import pkg from 'vs/platform/node/package';
 import { ansiColorIdentifiers, TERMINAL_BACKGROUND_COLOR, TERMINAL_FOREGROUND_COLOR, TERMINAL_CURSOR_FOREGROUND_COLOR, TERMINAL_CURSOR_BACKGROUND_COLOR, TERMINAL_SELECTION_BACKGROUND_COLOR } from 'vs/workbench/parts/terminal/electron-browser/terminalColorRegistry';
 import { PANEL_BACKGROUND } from 'vs/workbench/common/theme';
+import { IEnvironmentService } from 'vs/platform/environment/common/environment';
+import { sendData, readJSON } from 'vs/base/node/simpleIpc';
+import { onUnexpectedError } from 'vs/base/common/errors';
 
 /** The amount of time to consider terminal errors to be related to the launch */
 const LAUNCHING_DURATION = 500;
@@ -123,7 +126,8 @@ export class TerminalInstance implements ITerminalInstance {
 		@IInstantiationService private _instantiationService: IInstantiationService,
 		@IClipboardService private _clipboardService: IClipboardService,
 		@IHistoryService private _historyService: IHistoryService,
-		@IThemeService private _themeService: IThemeService
+		@IThemeService private _themeService: IThemeService,
+		@IEnvironmentService private _envService: IEnvironmentService
 	) {
 		this._instanceDisposables = [];
 		this._processDisposables = [];
@@ -149,7 +153,18 @@ export class TerminalInstance implements ITerminalInstance {
 		});
 
 		this._initDimensions();
-		this._createProcess();
+		if (this._envService.args['inspect-all']) {
+			this._createProcessInDebugMode()
+				.then(() => {
+					this._init();
+				}, onUnexpectedError);
+		} else {
+			this._createProcess();
+			this._init();
+		}
+	}
+
+	public _init(): void {
 		this._createXterm();
 
 		if (platform.isWindows) {
@@ -161,8 +176,8 @@ export class TerminalInstance implements ITerminalInstance {
 		}
 
 		// Only attach xterm.js to the DOM if the terminal panel has been opened before.
-		if (_container) {
-			this.attachToElement(_container);
+		if (this._container) {
+			this.attachToElement(this._container);
 		}
 	}
 
@@ -580,7 +595,17 @@ export class TerminalInstance implements ITerminalInstance {
 		return TerminalInstance._sanitizeCwd(cwd);
 	}
 
-	protected _createProcess(): void {
+	protected _createProcessInDebugMode() {
+		return sendData(this._envService.args['inspect-all-ipc'], JSON.stringify({
+			type: 'getDebugPort',
+			processName: 'Terminal Instance'
+		})).then(res => readJSON<any>(res))
+			.then(data => {
+				this._createProcess(data.debugPort);
+			});
+	}
+
+	protected _createProcess(port?: number): void {
 		const locale = this._configHelper.config.setLocaleVariables ? platform.locale : undefined;
 		if (!this._shellLaunchConfig.executable) {
 			this._configHelper.mergeDefaultShellPathAndArgs(this._shellLaunchConfig);
@@ -597,7 +622,8 @@ export class TerminalInstance implements ITerminalInstance {
 		const env = TerminalInstance.createTerminalEnv(envFromConfig, this._shellLaunchConfig, this._initialCwd, locale, this._cols, this._rows);
 		this._process = cp.fork(Uri.parse(require.toUrl('bootstrap')).fsPath, ['--type=terminal'], {
 			env,
-			cwd: Uri.parse(path.dirname(require.toUrl('../node/terminalProcess'))).fsPath
+			cwd: Uri.parse(path.dirname(require.toUrl('../node/terminalProcess'))).fsPath,
+			execArgv: port ? [`--inspect=${port}`] : []
 		});
 		this._processState = ProcessState.LAUNCHING;
 
@@ -743,7 +769,11 @@ export class TerminalInstance implements ITerminalInstance {
 		// Initialize new process
 		const oldTitle = this._title;
 		this._shellLaunchConfig = shell;
-		this._createProcess();
+		if (this._envService.args['inspect-all']) {
+			this._createProcessInDebugMode();
+		} else {
+			this._createProcess();
+		}
 		if (oldTitle !== this._title) {
 			this.setTitle(this._title, true);
 		}

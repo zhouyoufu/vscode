@@ -15,6 +15,7 @@ import * as os from 'os';
 import * as fs from 'fs';
 import { whenDeleted } from 'vs/base/node/pfs';
 import { findFreePort } from 'vs/base/node/ports';
+import { createServer, readJSON } from 'vs/base/node/simpleIpc';
 
 function shouldSpawnCliProcess(argv: ParsedArgs): boolean {
 	return !!argv['install-source']
@@ -41,6 +42,34 @@ export async function main(argv: string[]): TPromise<any> {
 		console.log(buildHelpMessage(product.nameLong, product.applicationName, pkg.version));
 	} else if (args.version) {
 		console.log(`${pkg.version}\n${product.commit}\n${process.arch}`);
+	} else if (args['cpu-profile']) {
+		const debugPort = args['cpu-profile'];
+		// load and start profiler
+		const profiler = await import('v8-inspect-profiler');
+		const targetProcess = await profiler.startProfiling({ port: Number(debugPort) });
+
+		// marker file
+		const filenamePrefix = paths.join(os.homedir(), Math.random().toString(16).slice(-4));
+
+		if (args.wait) {
+			return new TPromise<void>(c => {
+				process.on('SIGINT', async () => {
+					let suffix = '';
+					let profileTargetProcess = await targetProcess.stop();
+
+					if (!process.env['VSCODE_DEV']) {
+						profileTargetProcess = profiler.rewriteAbsolutePaths(profileTargetProcess, 'piiRemoved');
+						suffix = '.txt';
+					}
+
+					await profiler.writeProfile(profileTargetProcess, `${filenamePrefix}-main.cpuprofile${suffix}`);
+					console.log(`\nCPU Profile written to ${filenamePrefix}.cpuprofile${suffix}`);
+					c(null);
+					process.exit(0);
+				});
+			});
+		}
+		return;
 	} else if (shouldSpawnCliProcess(args)) {
 		const mainCli = new TPromise<IMainCli>(c => require(['vs/code/node/cliProcessMain'], c));
 		return mainCli.then(cli => cli.main(args));
@@ -68,7 +97,7 @@ export async function main(argv: string[]): TPromise<any> {
 
 		// If we are running with input from stdin, pipe that into a file and
 		// open this file via arguments. Ignore this when we are passed with
-		// paths to open. 
+		// paths to open.
 		let isReadingFromStdin: boolean;
 		try {
 			isReadingFromStdin = args._.length === 0 && !process.stdin.isTTY; // Via https://twitter.com/MylesBorins/status/782009479382626304
@@ -190,12 +219,85 @@ export async function main(argv: string[]): TPromise<any> {
 			});
 		}
 
+		if (args['inspect-all']) {
+			const portMain = await findFreePort(9222, 10, 6000);
+			const portRenderer = await findFreePort(portMain + 1, 10, 6000);
+			const portSearch = await findFreePort(portRenderer + 1, 10, 6000);
+
+			if (!portMain || !portRenderer || !portSearch) {
+				console.error('Failed to find free ports for profiler to connect to do.');
+				return;
+			}
+
+			argv.push(`--inspect=${portMain}`);
+			argv.push(`--remote-debugging-port=${portRenderer}`);
+			argv.push(`--inspect-search=${portSearch}`);
+
+			console.log(`Main process debug port: ${portMain}`);
+			console.log(`Renderer process debug port: ${portRenderer}`);
+			console.log(`Search process debug port: ${portSearch}`);
+
+			const processes = [
+				{
+					name: 'Main',
+					debugPort: portMain,
+				},
+				{
+					name: 'Renderer',
+					debugPort: portRenderer,
+				},
+				{
+					name: 'Search',
+					debugPort: portSearch,
+				},
+			];
+
+			let lastPort = portSearch;
+			let findingFreePort: Thenable<number>;
+			const ipc = await createServer('vscode-inspect-all', async (req, res) => {
+				const message = await readJSON<any>(req);
+				// console.log(JSON.stringify(message));
+
+				if (message.type === 'getDebugPort') {
+
+					while (findingFreePort) {
+						await findingFreePort;
+					}
+					findingFreePort = findFreePort(lastPort + 1, 10, 6000);
+					lastPort = await findingFreePort;
+					findingFreePort = null;
+
+					console.log(`${message.processName} process debug port: ${lastPort}`);
+					processes.push({
+						name: message.processName,
+						debugPort: lastPort,
+					});
+
+					res.write(JSON.stringify({ debugPort: lastPort }));
+					res.end();
+
+				} else if (message.type === 'getProcesses') {
+					res.write(JSON.stringify(processes));
+					res.end();
+				}
+			});
+
+			argv.push(`--inspect-all-ipc=${ipc.ipcHandlePath}`);
+
+			processCallbacks.push(child => {
+				return new TPromise<void>(c => child.once('exit', () => {
+					ipc.dispose();
+					c(null);
+				}));
+			});
+		}
+
 		const options = {
 			detached: true,
 			env
 		};
 
-		if (!args.verbose) {
+		if (!args.verbose && !args['inspect-all']) {
 			options['stdio'] = 'ignore';
 		}
 

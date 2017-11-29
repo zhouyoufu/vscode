@@ -27,7 +27,9 @@ const options: minimist.Opts = {
 		'open-url',
 		'enable-proposed-api',
 		'export-default-configuration',
-		'install-source'
+		'install-source',
+		'cpu-profile',
+		'inspect-all-ipc'
 	],
 	boolean: [
 		'help',
@@ -53,7 +55,8 @@ const options: minimist.Opts = {
 		'disable-updates',
 		'disable-crash-reporter',
 		'skip-add-to-recently-opened',
-		'verbose-logging'
+		'verbose-logging',
+		'inspect-all'
 	],
 	alias: {
 		add: 'a',
@@ -148,7 +151,9 @@ export const optionsHelp: { [name: string]: string; } = {
 	'--disable-extensions': localize('disableExtensions', "Disable all installed extensions."),
 	'--disable-gpu': localize('disableGPU', "Disable GPU hardware acceleration."),
 	'-v, --version': localize('version', "Print version."),
-	'-h, --help': localize('help', "Print usage.")
+	'-h, --help': localize('help', "Print usage."),
+	'--inspect-all': localize('inspect-all', "Start processes in debug mode and print debug ports to console"),
+	'--cpu-profile <port>': localize('cpu-profile', "Collect CPU profile from debug port")
 };
 
 export function formatOptions(options: { [name: string]: string; }, columns: number): string {

@@ -23,6 +23,7 @@ export interface ParsedArgs {
 	performance?: boolean;
 	'prof-startup'?: string;
 	'prof-startup-prefix'?: string;
+	'cpu-profile'?: string;
 	verbose?: boolean;
 	logExtensionHostCommunication?: boolean;
 	'disable-extensions'?: boolean;
@@ -49,6 +50,8 @@ export interface ParsedArgs {
 	'disable-crash-reporter'?: string;
 	'skip-add-to-recently-opened'?: boolean;
 	'verbose-logging'?: boolean | string[];
+	'inspect-all'?: boolean;
+	'inspect-all-ipc'?: string;
 }
 
 export const IEnvironmentService = createDecorator<IEnvironmentService>('environmentService');
