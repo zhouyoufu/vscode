@@ -6,8 +6,10 @@
 
 import * as nls from 'vs/nls';
 import { registerEditorAction, ServicesAccessor, EditorAction } from 'vs/editor/browser/editorExtensions';
-import { IConfigurationService, ConfigurationTarget } from 'vs/platform/configuration/common/configuration';
+import { sendData, readJSON } from 'vs/base/node/simpleIpc';
 import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
+import { onUnexpectedError } from 'vs/base/common/errors';
+import { IEnvironmentService } from 'vs/platform/environment/common/environment';
 
 export class ToggleRenderWhitespaceAction extends EditorAction {
 
@@ -21,17 +23,17 @@ export class ToggleRenderWhitespaceAction extends EditorAction {
 	}
 
 	public run(accessor: ServicesAccessor, editor: ICodeEditor): void {
-		const configurationService = accessor.get(IConfigurationService);
-
-		let renderWhitespace = editor.getConfiguration().viewInfo.renderWhitespace;
-		let newRenderWhitespace: string;
-		if (renderWhitespace === 'none') {
-			newRenderWhitespace = 'all';
-		} else {
-			newRenderWhitespace = 'none';
+		const environmentService = accessor.get(IEnvironmentService);
+		const socketPath = environmentService.args['inspect-all-ipc'];
+		if (socketPath) {
+			sendData(socketPath, JSON.stringify({
+				type: 'getProcesses',
+			})).then(res => readJSON<any>(res))
+				.then(data => {
+					console.log(JSON.stringify(data, null, '  '));
+				}, onUnexpectedError);
 		}
 
-		configurationService.updateValue('editor.renderWhitespace', newRenderWhitespace, ConfigurationTarget.USER);
 	}
 }
 
