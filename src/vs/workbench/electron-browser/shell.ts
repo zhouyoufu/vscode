@@ -21,7 +21,7 @@ import pkg from 'vs/platform/node/package';
 import { ContextViewService } from 'vs/platform/contextview/browser/contextViewService';
 import { Workbench, IWorkbenchStartedInfo } from 'vs/workbench/electron-browser/workbench';
 import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
-import { NullTelemetryService, configurationTelemetry, lifecycleTelemetry } from 'vs/platform/telemetry/common/telemetryUtils';
+import { NullTelemetryService, configurationTelemetry, lifecycleTelemetry, FileTelemetryService } from 'vs/platform/telemetry/common/telemetryUtils';
 import { IExperimentService, ExperimentService } from 'vs/platform/telemetry/common/experiments';
 import { ITelemetryAppenderChannel, TelemetryAppenderClient } from 'vs/platform/telemetry/common/telemetryIpc';
 import { TelemetryService, ITelemetryServiceConfig } from 'vs/platform/telemetry/common/telemetryService';
@@ -341,7 +341,7 @@ export class WorkbenchShell {
 
 			disposables.push(telemetryService, errorTelemetry, listener, idleMonitor);
 		} else {
-			this.telemetryService = NullTelemetryService;
+			this.telemetryService = new FileTelemetryService(this.environmentService.loggingDirectory);
 		}
 
 		serviceCollection.set(ITelemetryService, this.telemetryService);

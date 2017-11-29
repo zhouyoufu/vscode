@@ -129,7 +129,6 @@ export class AppInsightsAppender implements ITelemetryAppender {
 	}
 
 	log(eventName: string, data?: any): void {
-		console.log(`Logging ` + eventName);
 		if (!this._aiClient) {
 			return;
 		}
