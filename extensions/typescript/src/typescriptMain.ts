@@ -161,7 +161,7 @@ export function activate(context: ExtensionContext): void {
 		let clientHost: TypeScriptServiceClientHost | undefined;
 		return () => {
 			if (!clientHost) {
-				clientHost = new TypeScriptServiceClientHost(standardLanguageDescriptions, context.workspaceState, plugins, commandManager, context.loggingDirectory);
+				clientHost = new TypeScriptServiceClientHost(standardLanguageDescriptions, context.workspaceState, plugins, commandManager, context.isLoggingEnabled('typescript') ? context.loggingDirectory : undefined);
 				context.subscriptions.push(clientHost);
 
 				const host = clientHost;
