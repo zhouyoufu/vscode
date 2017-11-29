@@ -37,9 +37,13 @@ export async function main(argv: string[]): TPromise<any> {
 		return TPromise.as(null);
 	}
 
+	// Help
 	if (args.help) {
 		console.log(buildHelpMessage(product.nameLong, product.applicationName, pkg.version));
-	} else if (args.version) {
+	}
+
+	// Version Info
+	else if (args.version) {
 		console.log(`${pkg.version}\n${product.commit}\n${process.arch}`);
 	} else if (args['cpu-profile']) {
 		const debugPort = args['cpu-profile'];
@@ -69,10 +73,16 @@ export async function main(argv: string[]): TPromise<any> {
 			});
 		}
 		return;
-	} else if (shouldSpawnCliProcess(args)) {
+	}
+
+	// Extensions Management
+	else if (shouldSpawnCliProcess(args)) {
 		const mainCli = new TPromise<IMainCli>(c => require(['vs/code/node/cliProcessMain'], c));
 		return mainCli.then(cli => cli.main(args));
-	} else {
+	}
+
+	// Just Code
+	else {
 		const env = assign({}, process.env, {
 			// this will signal Code that it was spawned from this module
 			'VSCODE_CLI': '1',
@@ -83,7 +93,9 @@ export async function main(argv: string[]): TPromise<any> {
 
 		let processCallbacks: ((child: ChildProcess) => Thenable<any>)[] = [];
 
-		if (args.verbose) {
+		const verbose = args.verbose || args.ps;
+
+		if (verbose) {
 			env['ELECTRON_ENABLE_LOGGING'] = '1';
 
 			processCallbacks.push(child => {
@@ -125,7 +137,7 @@ export async function main(argv: string[]): TPromise<any> {
 				stdinFileError = error;
 			}
 
-			if (args.verbose) {
+			if (verbose) {
 				if (stdinFileError) {
 					console.error(`Failed to create file to read via stdin: ${stdinFileError.toString()}`);
 				} else {
@@ -150,7 +162,7 @@ export async function main(argv: string[]): TPromise<any> {
 				waitMarkerError = error;
 			}
 
-			if (args.verbose) {
+			if (verbose) {
 				if (waitMarkerError) {
 					console.error(`Failed to create marker file for --wait: ${waitMarkerError.toString()}`);
 				} else {
@@ -263,7 +275,7 @@ export async function main(argv: string[]): TPromise<any> {
 			env
 		};
 
-		if (!args.verbose && !args['inspect-all']) {
+		if (!verbose && !args['inspect-all']) {
 			options['stdio'] = 'ignore';
 		}
 

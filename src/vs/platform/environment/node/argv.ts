@@ -55,7 +55,8 @@ const options: minimist.Opts = {
 		'disable-crash-reporter',
 		'skip-add-to-recently-opened',
 		'verbose-logging',
-		'inspect-all'
+		'inspect-all',
+		'ps'
 	],
 	alias: {
 		add: 'a',
@@ -149,6 +150,7 @@ export const optionsHelp: { [name: string]: string; } = {
 	'--enable-proposed-api <extension-id>': localize('experimentalApis', "Enables proposed api features for an extension."),
 	'--disable-extensions': localize('disableExtensions', "Disable all installed extensions."),
 	'--disable-gpu': localize('disableGPU', "Disable GPU hardware acceleration."),
+	'--ps': localize('ps', "Print process usage and diagnostics information."),
 	'-v, --version': localize('version', "Print version."),
 	'-h, --help': localize('help', "Print usage."),
 	'--inspect-all': localize('inspect-all', "Start processes in debug mode and print debug ports to console"),

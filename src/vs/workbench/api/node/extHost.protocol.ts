@@ -49,6 +49,7 @@ import { SerializedError } from 'vs/base/common/errors';
 import { IWorkspaceFolderData } from 'vs/platform/workspace/common/workspace';
 import { IStat, IFileChange } from 'vs/platform/files/common/files';
 import { ConfigurationScope } from 'vs/platform/configuration/common/configurationRegistry';
+import { ParsedArgs } from 'vs/platform/environment/common/environment';
 
 export interface IEnvironment {
 	isExtensionDevelopmentDebug: boolean;
@@ -76,6 +77,8 @@ export interface IInitData {
 	configuration: IConfigurationInitData;
 	telemetryInfo: ITelemetryInfo;
 	loggingDirectory: string | undefined;
+	args: ParsedArgs;
+	execPath: string;
 }
 
 export interface IConfigurationInitData extends IConfigurationData {
