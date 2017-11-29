@@ -141,6 +141,21 @@ export class EnvironmentService implements IEnvironmentService {
 		return undefined;
 	}
 
+	@memoize
+	get loggingScopes(): string[] | boolean {
+		const arg = this._args['verbose-logging'];
+		if (!arg) {
+			return false;
+		}
+		if (arg.length === 0) {
+			return true;
+		}
+		if (Array.isArray(arg)) {
+			return arg.map(x => x.toLowerCase());
+		}
+		return [arg.toLowerCase()];
+	}
+
 	get disableUpdates(): boolean { return !!this._args['disable-updates']; }
 	get disableCrashReporter(): boolean { return !!this._args['disable-crash-reporter']; }
 

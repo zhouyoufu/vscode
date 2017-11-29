@@ -121,6 +121,7 @@ export class ExtHostExtensionService implements ExtHostExtensionServiceShape {
 	private _activator: ExtensionsActivator;
 	private _extensionPathIndex: TPromise<TernarySearchTree<IExtensionDescription>>;
 	private _loggingDirectory: string | undefined;
+	private _loggingScopes: string[] | boolean;
 
 	/**
 	 * This class is constructed manually because it is a service, so it doesn't use any ctor injection
@@ -140,6 +141,7 @@ export class ExtHostExtensionService implements ExtHostExtensionServiceShape {
 		this._proxy = this._threadService.get(MainContext.MainThreadExtensionService);
 		this._activator = null;
 		this._loggingDirectory = initData.loggingDirectory;
+		this._loggingScopes = initData.loggingScopes;
 
 		// initialize API first (i.e. do not release barrier until the API is initialized)
 		const apiFactory = createApiFactory(initData, threadService, extHostWorkspace, extHostConfiguration, this, logService);
@@ -334,7 +336,6 @@ export class ExtHostExtensionService implements ExtHostExtensionServiceShape {
 			this._storagePath.whenReady
 		]).then(() => {
 			const extensionLoggingPath = this._loggingDirectory && join(this._loggingDirectory, extensionDescription.id);
-
 			return Object.freeze(<IExtensionContext>{
 				globalState,
 				workspaceState,
@@ -353,11 +354,16 @@ export class ExtHostExtensionService implements ExtHostExtensionServiceShape {
 
 					return extensionLoggingPath;
 				},
-				isLoggingEnabled(scope?: string): boolean {
-					if (!extensionLoggingPath) {
+				isLoggingEnabled: (scope?: string): boolean => {
+					if (!extensionLoggingPath || !this._loggingScopes) {
 						return false;
 					}
-					return true;
+
+					if (this._loggingScopes === true || typeof scope === 'undefined') {
+						return true;
+					}
+
+					return this._loggingScopes.indexOf(scope) >= 0;
 				}
 			});
 		});

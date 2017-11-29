@@ -49,9 +49,10 @@ export interface ParsedArgs {
 	'disable-updates'?: string;
 	'disable-crash-reporter'?: string;
 	'skip-add-to-recently-opened'?: boolean;
-	'verbose-logging'?: boolean | string[];
 	'inspect-all'?: boolean;
 	'ps'?: boolean;
+	'inspect-all-ipc'?: string;
+	'verbose-logging'?: string | string[];
 }
 
 export const IEnvironmentService = createDecorator<IEnvironmentService>('environmentService');
@@ -121,4 +122,5 @@ export interface IEnvironmentService {
 	disableCrashReporter: boolean;
 
 	loggingDirectory: string | undefined;
+	loggingScopes: string[] | boolean;
 }

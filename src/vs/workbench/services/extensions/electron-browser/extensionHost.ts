@@ -364,6 +364,7 @@ export class ExtensionHostProcessWorker {
 					enableProposedApiFor: this._environmentService.args['enable-proposed-api'] || [],
 				},
 				loggingDirectory: this._environmentService.loggingDirectory,
+				loggingScopes: this._environmentService.loggingScopes,
 				workspace: this._contextService.getWorkbenchState() === WorkbenchState.EMPTY ? null : <IWorkspaceData>this._contextService.getWorkspace(),
 				extensions: extensionDescriptions,
 				// Send configurations scopes only in development mode.

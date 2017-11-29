@@ -76,9 +76,10 @@ export interface IInitData {
 	extensions: IExtensionDescription[];
 	configuration: IConfigurationInitData;
 	telemetryInfo: ITelemetryInfo;
-	loggingDirectory: string | undefined;
 	args: ParsedArgs;
 	execPath: string;
+	loggingDirectory: string | undefined;
+	loggingScopes: string[] | boolean;
 }
 
 export interface IConfigurationInitData extends IConfigurationData {
