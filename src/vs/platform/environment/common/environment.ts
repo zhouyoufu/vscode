@@ -51,7 +51,6 @@ export interface ParsedArgs {
 	'skip-add-to-recently-opened'?: boolean;
 	'verbose-logging'?: boolean | string[];
 	'inspect-all'?: boolean;
-	'inspect-all-ipc'?: string;
 }
 
 export const IEnvironmentService = createDecorator<IEnvironmentService>('environmentService');
