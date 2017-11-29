@@ -885,7 +885,7 @@ export class ReportIssueAction extends Action {
 		@IIntegrityService private integrityService: IIntegrityService,
 		@IExtensionManagementService private extensionManagementService: IExtensionManagementService,
 		@IExtensionEnablementService private extensionEnablementService: IExtensionEnablementService,
-		@IEnvironmentService private environmentService: IEnvironmentService
+		@IEnvironmentService private environmentService: IEnvironmentService,
 	) {
 		super(id, label);
 	}
@@ -1017,27 +1017,46 @@ export class ReportPerformanceIssueAction extends Action {
 
 		const osVersion = `${os.type()} ${os.arch()} ${os.release()}`;
 		const queryStringPrefix = baseUrl.indexOf('?') === -1 ? '?' : '&';
-		const body = encodeURIComponent(
-			`- VSCode Version: <code>${name} ${version}${isPure ? '' : ' **[Unsupported]**'} (${product.commit || 'Commit unknown'}, ${product.date || 'Date unknown'})</code>
-- OS Version: <code>${osVersion}</code>
-- CPUs: <code>${metrics.cpus.model} (${metrics.cpus.count} x ${metrics.cpus.speed})</code>
-- Memory (System): <code>${(metrics.totalmem / (1024 * 1024 * 1024)).toFixed(2)}GB (${(metrics.freemem / (1024 * 1024 * 1024)).toFixed(2)}GB free)</code>
-- Memory (Process): <code>${(metrics.meminfo.workingSetSize / 1024).toFixed(2)}MB working set (${(metrics.meminfo.peakWorkingSetSize / 1024).toFixed(2)}MB peak, ${(metrics.meminfo.privateBytes / 1024).toFixed(2)}MB private, ${(metrics.meminfo.sharedBytes / 1024).toFixed(2)}MB shared)</code>
-- Load (avg): <code>${metrics.loadavg.map(l => Math.round(l)).join(', ')}</code>
-- VM: <code>${metrics.isVMLikelyhood}%</code>
-- Initial Startup: <code>${metrics.initialStartup ? 'yes' : 'no'}</code>
-- Screen Reader: <code>${metrics.hasAccessibilitySupport ? 'yes' : 'no'}</code>
-- Empty Workspace: <code>${metrics.emptyWorkbench ? 'yes' : 'no'}</code>
-- Timings:
 
-${this.generatePerformanceTable(nodeModuleLoadTime)}
+		let hello = nodeModuleLoadTime + queryStringPrefix;
+		this.generatePerformanceTable();
+		console.log(hello);
 
----
+		const query = encodeURI(`\
+vscode=${name} ${version}${isPure ? '' : ' **[Unsupported]**'} (${product.commit || 'Commit unknown'}, ${product.date || 'Date unknown'})\
+&os=${osVersion}\
+&cpu=${metrics.cpus.model} (${metrics.cpus.count} x ${metrics.cpus.speed})\
+&sysMemory=${(metrics.totalmem / (1024 * 1024 * 1024)).toFixed(2)}GB (${(metrics.freemem / (1024 * 1024 * 1024)).toFixed(2)}GB free)\
+&procMemory=${(metrics.meminfo.workingSetSize / 1024).toFixed(2)}MB working set (${(metrics.meminfo.peakWorkingSetSize / 1024).toFixed(2)}MB peak, ${(metrics.meminfo.privateBytes / 1024).toFixed(2)}MB private, ${(metrics.meminfo.sharedBytes / 1024).toFixed(2)}MB shared)\
+&avgLoad=${metrics.loadavg.map(l => Math.round(l)).join(', ')}\
+&vm=${metrics.isVMLikelyhood}%\
+&startup=${metrics.initialStartup ? 'yes' : 'no'}\
+&screenReader=${metrics.initialStartup ? 'yes' : 'no'}\
+&emptyWorkspace=${metrics.emptyWorkbench ? 'yes' : 'no'}\
+`);
+		return `https://vscode-perf-issue.surge.sh?${query}`;
 
-${appendix}`
-		);
+// 		const body = encodeURIComponent(
+// 			`- VSCode Version: <code>${name} ${version}${isPure ? '' : ' **[Unsupported]**'} (${product.commit || 'Commit unknown'}, ${product.date || 'Date unknown'})</code>
+// - OS Version: <code>${osVersion}</code>
+// - CPUs: <code>${metrics.cpus.model} (${metrics.cpus.count} x ${metrics.cpus.speed})</code>
+// - Memory (System): <code>${(metrics.totalmem / (1024 * 1024 * 1024)).toFixed(2)}GB (${(metrics.freemem / (1024 * 1024 * 1024)).toFixed(2)}GB free)</code>
+// - Memory (Process): <code>${(metrics.meminfo.workingSetSize / 1024).toFixed(2)}MB working set (${(metrics.meminfo.peakWorkingSetSize / 1024).toFixed(2)}MB peak, ${(metrics.meminfo.privateBytes / 1024).toFixed(2)}MB private, ${(metrics.meminfo.sharedBytes / 1024).toFixed(2)}MB shared)</code>
+// - Load (avg): <code>${metrics.loadavg.map(l => Math.round(l)).join(', ')}</code>
+// - VM: <code>${metrics.isVMLikelyhood}%</code>
+// - Initial Startup: <code>${metrics.initialStartup ? 'yes' : 'no'}</code>
+// - Screen Reader: <code>${metrics.hasAccessibilitySupport ? 'yes' : 'no'}</code>
+// - Empty Workspace: <code>${metrics.emptyWorkbench ? 'yes' : 'no'}</code>
+// - Timings:
 
-		return `${baseUrl}${queryStringPrefix}body=${body}`;
+// ${this.generatePerformanceTable(nodeModuleLoadTime)}
+
+// ---
+
+// ${appendix}`
+// 		);
+
+// 		return `${baseUrl}${queryStringPrefix}body=${body}`;
 	}
 
 	private computeNodeModulesLoadTime(): number {
