@@ -23,7 +23,7 @@ import { ConfigurationService } from 'vs/platform/configuration/node/configurati
 import { IRequestService } from 'vs/platform/request/node/request';
 import { RequestService } from 'vs/platform/request/electron-browser/requestService';
 import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
-import { combinedAppender, NullTelemetryService } from 'vs/platform/telemetry/common/telemetryUtils';
+import { combinedAppender, NullTelemetryService, ITelemetryAppender } from 'vs/platform/telemetry/common/telemetryUtils';
 import { resolveCommonProperties } from 'vs/platform/telemetry/node/commonProperties';
 import { TelemetryAppenderChannel } from 'vs/platform/telemetry/common/telemetryIpc';
 import { TelemetryService, ITelemetryServiceConfig } from 'vs/platform/telemetry/common/telemetryService';
@@ -35,6 +35,7 @@ import { WindowsChannelClient } from 'vs/platform/windows/common/windowsIpc';
 import { ipcRenderer } from 'electron';
 import { IDisposable, dispose } from 'vs/base/common/lifecycle';
 import { createSharedProcessContributions } from 'vs/code/electron-browser/contrib/contributions';
+import { FileAppender } from 'vs/platform/telemetry/node/fileAppender';
 
 export interface ISharedProcessConfiguration {
 	readonly machineId: string;
@@ -47,6 +48,7 @@ export function startup(configuration: ISharedProcessConfiguration) {
 interface ISharedProcessInitData {
 	sharedIPCHandle: string;
 	args: ParsedArgs;
+	loggingDirectory: string | undefined;
 }
 
 class ActiveWindowManager implements IDisposable {
@@ -92,17 +94,21 @@ function main(server: Server, initData: ISharedProcessInitData, configuration: I
 	const instantiationService = new InstantiationService(services);
 
 	instantiationService.invokeFunction(accessor => {
-		const appenders: AppInsightsAppender[] = [];
+		const appenders: ITelemetryAppender[] = [];
+		if (initData.loggingDirectory) {
+			appenders.push(new FileAppender(initData.loggingDirectory));
+		}
 
 		if (product.aiConfig && product.aiConfig.asimovKey) {
 			appenders.push(new AppInsightsAppender(eventPrefix, null, product.aiConfig.asimovKey));
 		}
 
+		const appender = combinedAppender(...appenders);
+
 		// It is important to dispose the AI adapter properly because
 		// only then they flush remaining data.
-		process.once('exit', () => appenders.forEach(a => a.dispose()));
+		process.once('exit', () => appender.dispose());
 
-		const appender = combinedAppender(...appenders);
 		server.registerChannel('telemetryAppender', new TelemetryAppenderChannel(appender));
 
 		const services = new ServiceCollection();

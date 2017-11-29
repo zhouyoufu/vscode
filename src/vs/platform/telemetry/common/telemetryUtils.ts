@@ -29,15 +29,21 @@ export const NullTelemetryService = new class implements ITelemetryService {
 	}
 };
 
-export interface ITelemetryAppender {
+export interface ITelemetryAppender extends IDisposable {
 	log(eventName: string, data: any): void;
 }
 
 export function combinedAppender(...appenders: ITelemetryAppender[]): ITelemetryAppender {
-	return { log: (e, d) => appenders.forEach(a => a.log(e, d)) };
+	return {
+		log: (e, d) => appenders.forEach(a => a.log(e, d)),
+		dispose: () => appenders.forEach(a => a.dispose())
+	};
 }
 
-export const NullAppender: ITelemetryAppender = { log: () => null };
+export const NullAppender: ITelemetryAppender = {
+	log: () => null,
+	dispose: () => { }
+};
 
 /* __GDPR__FRAGMENT__
 	"URIDescriptor" : {

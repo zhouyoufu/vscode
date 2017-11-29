@@ -75,7 +75,8 @@ export class SharedProcess implements ISharedProcess {
 			ipcMain.once('handshake:hello', ({ sender }: { sender: any }) => {
 				sender.send('handshake:hey there', {
 					sharedIPCHandle: this.environmentService.sharedIPCHandle,
-					args: this.environmentService.args
+					args: this.environmentService.args,
+					loggingDirectory: this.environmentService.loggingDirectory
 				});
 
 				ipcMain.once('handshake:im ready', () => c(null));
