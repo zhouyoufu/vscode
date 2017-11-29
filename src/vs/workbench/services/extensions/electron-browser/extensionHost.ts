@@ -25,13 +25,14 @@ import { IEnvironmentService } from 'vs/platform/environment/common/environment'
 import { IMessagePassingProtocol } from 'vs/base/parts/ipc/common/ipc';
 import { generateRandomPipeName, Protocol } from 'vs/base/parts/ipc/node/ipc.net';
 import { createServer, Server, Socket } from 'net';
+import * as fs from 'fs';
 import Event, { Emitter, debounceEvent, mapEvent, anyEvent, fromNodeEventEmitter } from 'vs/base/common/event';
 import { IInitData, IWorkspaceData, IConfigurationInitData } from 'vs/workbench/api/node/extHost.protocol';
 import { IExtensionService } from 'vs/platform/extensions/common/extensions';
 import { IWorkspaceConfigurationService } from 'vs/workbench/services/configuration/common/configuration';
 import { ICrashReporterService } from 'vs/workbench/services/crashReporter/electron-browser/crashReporterService';
 import { IBroadcastService, IBroadcast } from 'vs/platform/broadcast/electron-browser/broadcastService';
-import { isEqual } from 'vs/base/common/paths';
+import { isEqual, join } from 'vs/base/common/paths';
 import { EXTENSION_CLOSE_EXTHOST_BROADCAST_CHANNEL, EXTENSION_RELOAD_BROADCAST_CHANNEL, EXTENSION_ATTACH_BROADCAST_CHANNEL, EXTENSION_LOG_BROADCAST_CHANNEL, EXTENSION_TERMINATE_BROADCAST_CHANNEL } from 'vs/platform/extensions/common/extensionHost';
 import { IDisposable, dispose } from 'vs/base/common/lifecycle';
 import { IRemoteConsoleLog, log, parse } from 'vs/base/node/console';
@@ -371,6 +372,15 @@ export class ExtensionHostProcessWorker {
 	}
 
 	private _logExtensionHostMessage(entry: IRemoteConsoleLog) {
+
+		if (this._environmentService.loggingDirectory) {
+			const { args, stack } = parse(entry);
+			let topFrame = stack && stack.split('\n')[0];
+			if (topFrame) {
+				topFrame = `(${topFrame.trim()})`;
+			}
+			fs.appendFile(join(this._environmentService.loggingDirectory, 'console.txt'), `${entry.severity}: ${args.join(' ')} ${topFrame}`);
+		}
 
 		// Send to local console unless we run tests from cli
 		if (!this._isExtensionDevTestFromCli) {
