@@ -144,12 +144,14 @@ export class EnvironmentService implements IEnvironmentService {
 	@memoize
 	get loggingScopes(): string[] | boolean {
 		const arg = this._args['verbose-logging'];
-		if (!arg) {
+		if (typeof arg === 'undefined' || arg === false) {
 			return false;
 		}
-		if (arg.length === 0) {
+
+		if (arg === true || arg.length === 0) {
 			return true;
 		}
+
 		if (Array.isArray(arg)) {
 			return arg.map(x => x.toLowerCase());
 		}
