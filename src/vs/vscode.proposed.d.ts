@@ -254,6 +254,13 @@ declare module 'vscode' {
 		 * Undefined if logging is disabled.
 		 */
 		loggingDirectory: string | undefined;
+
+		/**
+		 * Check if logging is enabled.
+		 *
+		 * @param scope Identifier for kind of logging the extension wishes to preform. If undefined, checks if global logging is enabled.
+		 */
+		isLoggingEnabled(scope?: string): boolean;
 	}
 
 	/**

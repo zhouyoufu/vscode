@@ -352,6 +352,12 @@ export class ExtHostExtensionService implements ExtHostExtensionServiceShape {
 					}
 
 					return extensionLoggingPath;
+				},
+				isLoggingEnabled(scope?: string): boolean {
+					if (!extensionLoggingPath) {
+						return false;
+					}
+					return true;
 				}
 			});
 		});
