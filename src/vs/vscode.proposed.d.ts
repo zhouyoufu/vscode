@@ -247,4 +247,22 @@ declare module 'vscode' {
 		 */
 		provideCodeActions2?(document: TextDocument, range: Range, context: CodeActionContext, token: CancellationToken): ProviderResult<(Command | CodeAction)[]>;
 	}
+
+	export interface ExtensionContext {
+		/**
+		 * The absolute file path of a directory where the extension can write its log files.
+		 * Undefined if logging is disabled.
+		 */
+		loggingDirectory: string | undefined;
+	}
+
+	/**
+	 * Namespace describing the environment the editor runs in.
+	 */
+	export namespace env {
+		/**
+		 *
+		 */
+		export let globalLoggingDirectory: string | undefined;
+	}
 }
