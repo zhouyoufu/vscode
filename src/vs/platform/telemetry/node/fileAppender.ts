@@ -8,6 +8,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { TPromise } from 'vs/base/common/winjs.base';
 import { ITelemetryAppender } from 'vs/platform/telemetry/common/telemetryUtils';
+import { deepClone } from 'vs/base/common/objects';
+import { startsWith } from 'vs/base/common/strings';
 
 export class FileAppender implements ITelemetryAppender {
 
@@ -15,9 +17,22 @@ export class FileAppender implements ITelemetryAppender {
 
 	log(eventName: string, data?: any): void {
 		if (data && data['loggingDirectory']) {
+			data = deepClone(data);
 			const stream = this._getStream(data['loggingDirectory']);
+
+			// Clean up data
 			delete data['loggingDirectory'];
-			stream.write(eventName + ': ' + JSON.stringify(data));
+			delete data['sessionID'];
+			delete data['timestamp'];
+			delete data['version'];
+			Object.keys(data).forEach(k => {
+				if (startsWith(k, 'common.')) {
+					delete data[k];
+				}
+			});
+
+			const d = new Date();
+			stream.write(`[${d.toJSON()}] ${eventName}: ${JSON.stringify(data)}\n`);
 		}
 	}
 
