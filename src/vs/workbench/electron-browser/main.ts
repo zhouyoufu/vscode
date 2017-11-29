@@ -72,7 +72,7 @@ function openWorkbench(configuration: IWindowConfiguration): TPromise<void> {
 	const mainProcessClient = new ElectronIPCClient(String(`window${currentWindowId}`));
 	const mainServices = createMainProcessServices(mainProcessClient);
 
-	const environmentService = new EnvironmentService(configuration, configuration.execPath);
+	const environmentService = new EnvironmentService(configuration, configuration.execPath, configuration.loggingDirectory);
 	const logService = new SpdLogService('renderer', environmentService);
 	logService.info('openWorkbench', JSON.stringify(configuration));
 

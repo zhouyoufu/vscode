@@ -21,7 +21,7 @@ import pkg from 'vs/platform/node/package';
 import { ContextViewService } from 'vs/platform/contextview/browser/contextViewService';
 import { Workbench, IWorkbenchStartedInfo } from 'vs/workbench/electron-browser/workbench';
 import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
-import { configurationTelemetry, lifecycleTelemetry, FileTelemetryService } from 'vs/platform/telemetry/common/telemetryUtils';
+import { configurationTelemetry, lifecycleTelemetry } from 'vs/platform/telemetry/common/telemetryUtils';
 import { IExperimentService, ExperimentService } from 'vs/platform/telemetry/common/experiments';
 import { ITelemetryAppenderChannel, TelemetryAppenderClient } from 'vs/platform/telemetry/common/telemetryIpc';
 import { TelemetryService, ITelemetryServiceConfig } from 'vs/platform/telemetry/common/telemetryService';
@@ -89,6 +89,7 @@ import { IBroadcastService, BroadcastService } from 'vs/platform/broadcast/elect
 import { HashService } from 'vs/workbench/services/hash/node/hashService';
 import { IHashService } from 'vs/workbench/services/hash/common/hashService';
 import { ILogService } from 'vs/platform/log/common/log';
+import { join } from 'path';
 
 /**
  * Services that we require for the Shell
@@ -315,39 +316,40 @@ export class WorkbenchShell {
 		serviceCollection.set(IExperimentService, this.experimentService);
 
 		// Telemetry
-		if (this.environmentService.isBuilt && !this.environmentService.isExtensionDevelopment && !this.environmentService.args['disable-telemetry'] && !!product.enableTelemetry) {
-			const channel = getDelayedChannel<ITelemetryAppenderChannel>(sharedProcess.then(c => c.getChannel('telemetryAppender')));
-			const commit = product.commit;
-			const version = pkg.version;
+		// if (this.environmentService.isBuilt && !this.environmentService.isExtensionDevelopment && !this.environmentService.args['disable-telemetry'] && !!product.enableTelemetry) {
+		const channel = getDelayedChannel<ITelemetryAppenderChannel>(sharedProcess.then(c => c.getChannel('telemetryAppender')));
+		const commit = product.commit;
+		const version = pkg.version;
 
-			const config: ITelemetryServiceConfig = {
-				appender: new TelemetryAppenderClient(channel),
-				commonProperties: resolveWorkbenchCommonProperties(this.storageService, commit, version, this.configuration.machineId, this.environmentService.installSourcePath),
-				piiPaths: [this.environmentService.appRoot, this.environmentService.extensionsPath]
-			};
+		const loggingDirectory = this.environmentService.loggingDirectory && join(this.environmentService.loggingDirectory, 'renderer');
+		const config: ITelemetryServiceConfig = {
+			appender: new TelemetryAppenderClient(channel),
+			commonProperties: resolveWorkbenchCommonProperties(this.storageService, commit, version, this.configuration.machineId, this.environmentService.installSourcePath, loggingDirectory),
+			piiPaths: [this.environmentService.appRoot, this.environmentService.extensionsPath]
+		};
 
-			const telemetryService = instantiationService.createInstance(TelemetryService, config);
-			this.telemetryService = telemetryService;
+		const telemetryService = instantiationService.createInstance(TelemetryService, config);
+		this.telemetryService = telemetryService;
 
-			const errorTelemetry = new ErrorTelemetry(telemetryService);
-			const idleMonitor = new IdleMonitor(2 * 60 * 1000); // 2 minutes
+		const errorTelemetry = new ErrorTelemetry(telemetryService);
+		const idleMonitor = new IdleMonitor(2 * 60 * 1000); // 2 minutes
 
-			const listener = idleMonitor.onStatusChange(status =>
-				/* __GDPR__
-					"UserIdleStart" : {}
-				*/
-				/* __GDPR__
-					"UserIdleStop" : {}
-				*/
-				this.telemetryService.publicLog(status === UserStatus.Active
-					? TelemetryService.IDLE_STOP_EVENT_NAME
-					: TelemetryService.IDLE_START_EVENT_NAME
-				));
+		const listener = idleMonitor.onStatusChange(status =>
+			/* __GDPR__
+				"UserIdleStart" : {}
+			*/
+			/* __GDPR__
+				"UserIdleStop" : {}
+			*/
+			this.telemetryService.publicLog(status === UserStatus.Active
+				? TelemetryService.IDLE_STOP_EVENT_NAME
+				: TelemetryService.IDLE_START_EVENT_NAME
+			));
 
-			disposables.push(telemetryService, errorTelemetry, listener, idleMonitor);
-		} else {
-			this.telemetryService = new FileTelemetryService(this.environmentService.loggingDirectory);
-		}
+		disposables.push(telemetryService, errorTelemetry, listener, idleMonitor);
+		// } else {
+		// 	this.telemetryService = new FileTelemetryService(this.environmentService.loggingDirectory);
+		// }
 
 		serviceCollection.set(ITelemetryService, this.telemetryService);
 		disposables.push(configurationTelemetry(this.telemetryService, this.configurationService));

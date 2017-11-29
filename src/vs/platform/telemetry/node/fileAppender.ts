@@ -11,21 +11,32 @@ import { ITelemetryAppender } from 'vs/platform/telemetry/common/telemetryUtils'
 
 export class FileAppender implements ITelemetryAppender {
 
-	private logFileStream: fs.WriteStream;
-
-	constructor(loggingDirectory: string | undefined) {
-		const logFilePath = path.join(loggingDirectory, 'telemetry.log');
-		console.log('log file path: ' + logFilePath);
-		this.logFileStream = fs.createWriteStream(logFilePath);
-	}
+	private streams = new Map<string, fs.WriteStream>();
 
 	log(eventName: string, data?: any): void {
-		console.log(`logging ` + eventName);
-		this.logFileStream.write(eventName + ': ' + JSON.stringify(data));
+		if (data && data['loggingDirectory']) {
+			const stream = this._getStream(data['loggingDirectory']);
+			delete data['loggingDirectory'];
+			stream.write(eventName + ': ' + JSON.stringify(data));
+		}
+	}
+
+	private _getStream(logFolderPath: string): fs.WriteStream {
+		const logFilePath = path.join(logFolderPath, 'telemetry.log');
+		if (!this.streams.has(logFilePath)) {
+			if (!fs.existsSync(logFolderPath)) {
+				fs.mkdirSync(logFolderPath);
+			}
+
+			this.streams.set(logFilePath, fs.createWriteStream(logFilePath));
+		}
+
+		return this.streams.get(logFilePath);
 	}
 
 	dispose(): TPromise<any> {
-		this.logFileStream.close();
+		this.streams.forEach(s => s.close());
+
 		return TPromise.wrap(null);
 	}
 }

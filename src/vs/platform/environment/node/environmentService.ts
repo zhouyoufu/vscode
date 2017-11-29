@@ -130,6 +130,11 @@ export class EnvironmentService implements IEnvironmentService {
 
 	@memoize
 	get loggingDirectory(): string | undefined {
+		if (this._loggingDirectory) {
+			return this._loggingDirectory;
+		}
+
+		console.log('inventing log dir');
 		if (this._args['verbose-logging']) {
 			return fs.mkdtempSync(path.join(os.tmpdir(), `vscode-log-`));
 		}
@@ -141,7 +146,7 @@ export class EnvironmentService implements IEnvironmentService {
 
 	readonly machineUUID: string;
 
-	constructor(private _args: ParsedArgs, private _execPath: string) {
+	constructor(private _args: ParsedArgs, private _execPath: string, private _loggingDirectory?: string) {
 		const machineIdPath = path.join(this.userDataPath, 'machineid');
 
 		try {

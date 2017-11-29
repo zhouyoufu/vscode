@@ -9,7 +9,7 @@ import { TPromise } from 'vs/base/common/winjs.base';
 import * as uuid from 'vs/base/common/uuid';
 import { readFile } from 'vs/base/node/pfs';
 
-export function resolveCommonProperties(commit: string, version: string, machineId: string, installSourcePath: string): TPromise<{ [name: string]: string; }> {
+export function resolveCommonProperties(commit: string, version: string, machineId: string, installSourcePath: string, loggingDirectory?: string): TPromise<{ [name: string]: string; }> {
 	const result: { [name: string]: string; } = Object.create(null);
 	// __GDPR__COMMON__ "common.machineId" : { "classification": "EndUserPseudonymizedInformation", "purpose": "FeatureInsight" }
 	result['common.machineId'] = machineId;
@@ -27,6 +27,8 @@ export function resolveCommonProperties(commit: string, version: string, machine
 	result['common.nodePlatform'] = process.platform;
 	// __GDPR__COMMON__ "common.nodeArch" : { "classification": "SystemMetaData", "purpose": "FeatureInsight" }
 	result['common.nodeArch'] = process.arch;
+
+	result['loggingDirectory'] = loggingDirectory;
 
 	// dynamic properties which value differs on each call
 	let seq = 0;

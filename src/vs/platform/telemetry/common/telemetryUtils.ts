@@ -13,35 +13,11 @@ import { IConfigurationService, ConfigurationTarget } from 'vs/platform/configur
 import { IKeybindingService, KeybindingSource } from 'vs/platform/keybinding/common/keybinding';
 import { ILifecycleService, ShutdownReason } from 'vs/platform/lifecycle/common/lifecycle';
 import { ITelemetryService, ITelemetryInfo, ITelemetryData } from 'vs/platform/telemetry/common/telemetry';
-import { FileAppender } from 'vs/platform/telemetry/node/fileAppender';
 
 export const NullTelemetryService = new class implements ITelemetryService {
 	_serviceBrand: undefined;
 	publicLog(eventName: string, data?: ITelemetryData) {
 		return TPromise.wrap<void>(null);
-	}
-	isOptedIn: true;
-	getTelemetryInfo(): TPromise<ITelemetryInfo> {
-		return TPromise.wrap({
-			instanceId: 'someValue.instanceId',
-			sessionId: 'someValue.sessionId',
-			machineId: 'someValue.machineId'
-		});
-	}
-};
-
-export class FileTelemetryService implements ITelemetryService {
-	_serviceBrand: undefined;
-
-	_fileAppender: FileAppender;
-
-	constructor(loggingDirectory: string | undefined) {
-		this._fileAppender = new FileAppender(loggingDirectory);
-	}
-
-	publicLog(eventName: string, data?: ITelemetryData) {
-		this._fileAppender.log(eventName, data);
-		return TPromise.wrap(null);
 	}
 	isOptedIn: true;
 	getTelemetryInfo(): TPromise<ITelemetryInfo> {

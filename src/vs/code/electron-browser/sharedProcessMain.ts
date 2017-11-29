@@ -23,7 +23,7 @@ import { ConfigurationService } from 'vs/platform/configuration/node/configurati
 import { IRequestService } from 'vs/platform/request/node/request';
 import { RequestService } from 'vs/platform/request/electron-browser/requestService';
 import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
-import { combinedAppender, NullTelemetryService, ITelemetryAppender } from 'vs/platform/telemetry/common/telemetryUtils';
+import { combinedAppender, ITelemetryAppender } from 'vs/platform/telemetry/common/telemetryUtils';
 import { resolveCommonProperties } from 'vs/platform/telemetry/node/commonProperties';
 import { TelemetryAppenderChannel } from 'vs/platform/telemetry/common/telemetryIpc';
 import { TelemetryService, ITelemetryServiceConfig } from 'vs/platform/telemetry/common/telemetryService';
@@ -48,7 +48,6 @@ export function startup(configuration: ISharedProcessConfiguration) {
 interface ISharedProcessInitData {
 	sharedIPCHandle: string;
 	args: ParsedArgs;
-	loggingDirectory: string | undefined;
 }
 
 class ActiveWindowManager implements IDisposable {
@@ -95,11 +94,12 @@ function main(server: Server, initData: ISharedProcessInitData, configuration: I
 
 	instantiationService.invokeFunction(accessor => {
 		const appenders: ITelemetryAppender[] = [];
-		if (initData.loggingDirectory) {
-			appenders.push(new FileAppender(initData.loggingDirectory));
-		}
+		appenders.push(new FileAppender());
 
-		if (product.aiConfig && product.aiConfig.asimovKey) {
+		const environmentService = accessor.get(IEnvironmentService);
+		const { appRoot, extensionsPath, extensionDevelopmentPath, isBuilt, installSourcePath } = environmentService;
+		const enableTelemetry = isBuilt && !extensionDevelopmentPath && !environmentService.args['disable-telemetry'] && product.enableTelemetry;
+		if (product.aiConfig && product.aiConfig.asimovKey && enableTelemetry) {
 			appenders.push(new AppInsightsAppender(eventPrefix, null, product.aiConfig.asimovKey));
 		}
 
@@ -112,20 +112,14 @@ function main(server: Server, initData: ISharedProcessInitData, configuration: I
 		server.registerChannel('telemetryAppender', new TelemetryAppenderChannel(appender));
 
 		const services = new ServiceCollection();
-		const environmentService = accessor.get(IEnvironmentService);
-		const { appRoot, extensionsPath, extensionDevelopmentPath, isBuilt, installSourcePath } = environmentService;
 
-		if (isBuilt && !extensionDevelopmentPath && !environmentService.args['disable-telemetry'] && product.enableTelemetry) {
-			const config: ITelemetryServiceConfig = {
-				appender,
-				commonProperties: resolveCommonProperties(product.commit, pkg.version, configuration.machineId, installSourcePath),
-				piiPaths: [appRoot, extensionsPath]
-			};
+		const config: ITelemetryServiceConfig = {
+			appender,
+			commonProperties: resolveCommonProperties(product.commit, pkg.version, configuration.machineId, installSourcePath),
+			piiPaths: [appRoot, extensionsPath]
+		};
 
-			services.set(ITelemetryService, new SyncDescriptor(TelemetryService, config));
-		} else {
-			services.set(ITelemetryService, NullTelemetryService);
-		}
+		services.set(ITelemetryService, new SyncDescriptor(TelemetryService, config));
 
 		services.set(IExtensionManagementService, new SyncDescriptor(ExtensionManagementService));
 		services.set(IExtensionGalleryService, new SyncDescriptor(ExtensionGalleryService));

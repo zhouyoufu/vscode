@@ -302,6 +302,7 @@ export interface IWindowConfiguration extends ParsedArgs, IOpenFileRequest {
 	nodeCachedDataDir: string;
 
 	backupPath?: string;
+	loggingDirectory?: string;
 
 	workspace?: IWorkspaceIdentifier;
 	folderPath?: string;
