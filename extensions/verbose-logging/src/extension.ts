@@ -19,7 +19,7 @@ export function activate(context: vscode.ExtensionContext) {
 		context.subscriptions.push(new LoggingStatus(vscode.env.globalLoggingDirectory!));
 	}
 
-	context.subscriptions.push(vscode.commands.registerCommand('verbose-logging.stopLogging', uploadOrPreview));
+	context.subscriptions.push(vscode.commands.registerCommand('verbose-logging.previewOrUpload', uploadOrPreview));
 }
 
 const UPLOAD = 'Secure Upload';
