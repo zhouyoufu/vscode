@@ -22,8 +22,11 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(vscode.commands.registerCommand('verbose-logging.stopLogging', uploadOrPreview));
 }
 
+const UPLOAD = 'Secure Upload';
+const REVIEW = 'Review';
+
 async function uploadOrPreview(): Promise<string | undefined> {
-	const selection = await vscode.window.showInformationMessage('Upload or preview???', 'Preview', 'Upload', 'Learn More');
+	const selection = await vscode.window.showInformationMessage('Please review the log files, then upload them to our secure server', REVIEW, UPLOAD, 'Learn More');
 	if (!selection) {
 		return;
 	}
@@ -33,11 +36,11 @@ async function uploadOrPreview(): Promise<string | undefined> {
 		return;
 	}
 
-	if (selection === 'Preview') {
+	if (selection === REVIEW) {
 		await vscode.commands.executeCommand('_workbench.action.files.revealInOS', vscode.Uri.parse(loggingDir));
 	}
 
-	if (selection === 'Upload') {
+	if (selection === UPLOAD) {
 		try {
 			const blobName = await upload(loggingDir!);
 			const message = `Upload successful! Your log ID: ${blobName}`;
