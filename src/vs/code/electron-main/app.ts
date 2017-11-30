@@ -303,7 +303,8 @@ export class CodeApplication {
 		services.set(IWindowsService, new SyncDescriptor(WindowsService, this.sharedProcess));
 		services.set(ILaunchService, new SyncDescriptor(LaunchService));
 
-		const loggingDirectory = this.environmentService.verboseLogging && join(this.environmentService.loggingDirectory, 'main');
+		const logTelemetry = this.environmentService.loggingScopes === true || (this.environmentService.loggingScopes && this.environmentService.loggingScopes.indexOf('telemetry') >= 0);
+		const loggingDirectory = logTelemetry && join(this.environmentService.loggingDirectory, 'main');
 
 		// Telemetry
 		const channel = getDelayedChannel<ITelemetryAppenderChannel>(this.sharedProcessClient.then(c => c.getChannel('telemetryAppender')));

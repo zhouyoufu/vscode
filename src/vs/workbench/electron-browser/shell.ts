@@ -321,7 +321,9 @@ export class WorkbenchShell {
 		const commit = product.commit;
 		const version = pkg.version;
 
-		const loggingDirectory = this.environmentService.verboseLogging && join(this.environmentService.loggingDirectory, 'renderer');
+		const logTelemetry = this.environmentService.loggingScopes === true || (this.environmentService.loggingScopes && this.environmentService.loggingScopes.indexOf('telemetry') >= 0);
+		const loggingDirectory = logTelemetry && join(this.environmentService.loggingDirectory, 'renderer');
+
 		const config: ITelemetryServiceConfig = {
 			appender: new TelemetryAppenderClient(channel),
 			commonProperties: resolveWorkbenchCommonProperties(this.storageService, commit, version, this.configuration.machineId, this.environmentService.installSourcePath, loggingDirectory),
