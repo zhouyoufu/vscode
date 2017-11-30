@@ -46,6 +46,7 @@ import { IInstantiationService } from 'vs/platform/instantiation/common/instanti
 import { IExtensionService } from 'vs/platform/extensions/common/extensions';
 import { getEntries } from 'vs/base/common/performance';
 import { IEditor } from 'vs/platform/editor/common/editor';
+import { ICommandService } from 'vs/platform/commands/common/commands';
 
 // --- actions
 
@@ -984,80 +985,96 @@ export class ReportPerformanceIssueAction extends Action {
 		label: string,
 		@IIntegrityService private integrityService: IIntegrityService,
 		@IEnvironmentService private environmentService: IEnvironmentService,
-		@ITimerService private timerService: ITimerService
+		@ITimerService private timerService: ITimerService,
+		@ICommandService private commandService: ICommandService
 	) {
 		super(id, label);
 	}
 
 	public run(appendix?: string): TPromise<boolean> {
 		return this.integrityService.isPure().then(res => {
-			const issueUrl = this.generatePerformanceIssueUrl(product.reportIssueUrl, pkg.name, pkg.version, product.commit, product.date, res.isPure, appendix);
-
-			window.open(issueUrl);
+			const vscodeInfo = this.getVSCodeInfo(product.reportIssueUrl, pkg.name, pkg.version, product.commit, product.date, res.isPure, appendix);
+			this.commandService.executeCommand('extension.previewPerfIssue', { vscodeInfo })
 
 			return TPromise.as(true);
 		});
 	}
 
-	private generatePerformanceIssueUrl(baseUrl: string, name: string, version: string, commit: string, date: string, isPure: boolean, appendix?: string): string {
+// 	private generatePerformanceIssueUrl(baseUrl: string, name: string, version: string, commit: string, date: string, isPure: boolean, appendix?: string): string {
 
-		if (!appendix) {
-			appendix = `Additional Steps to Reproduce (if any):
+// 		if (!appendix) {
+// 			appendix = `Additional Steps to Reproduce (if any):
 
-1.
-2.`;
+// 1.
+// 2.`;
+// 		}
+
+// 		let nodeModuleLoadTime: number;
+// 		if (this.environmentService.performance) {
+// 			nodeModuleLoadTime = this.computeNodeModulesLoadTime();
+// 		}
+
+// 		const metrics: IStartupMetrics = this.timerService.startupMetrics;
+
+// 		const osVersion = `${os.type()} ${os.arch()} ${os.release()}`;
+// 		const queryStringPrefix = baseUrl.indexOf('?') === -1 ? '?' : '&';
+
+// 		let hello = nodeModuleLoadTime + queryStringPrefix;
+// 		this.generatePerformanceTable();
+// 		console.log(hello);
+
+// 		const query = encodeURI(`\
+// vscode=${name} ${version}${isPure ? '' : ' **[Unsupported]**'} (${product.commit || 'Commit unknown'}, ${product.date || 'Date unknown'})\
+// &os=${osVersion}\
+// &cpu=${metrics.cpus.model} (${metrics.cpus.count} x ${metrics.cpus.speed})\
+// &sysMemory=${(metrics.totalmem / (1024 * 1024 * 1024)).toFixed(2)}GB (${(metrics.freemem / (1024 * 1024 * 1024)).toFixed(2)}GB free)\
+// &procMemory=${(metrics.meminfo.workingSetSize / 1024).toFixed(2)}MB working set (${(metrics.meminfo.peakWorkingSetSize / 1024).toFixed(2)}MB peak, ${(metrics.meminfo.privateBytes / 1024).toFixed(2)}MB private, ${(metrics.meminfo.sharedBytes / 1024).toFixed(2)}MB shared)\
+// &avgLoad=${metrics.loadavg.map(l => Math.round(l)).join(', ')}\
+// &vm=${metrics.isVMLikelyhood}%\
+// &startup=${metrics.initialStartup ? 'yes' : 'no'}\
+// &screenReader=${metrics.initialStartup ? 'yes' : 'no'}\
+// &emptyWorkspace=${metrics.emptyWorkbench ? 'yes' : 'no'}\
+// `);
+// 		return `https://vscode-perf-issue.surge.sh?${query}`;
+
+// 	}
+
+	private getVSCodeInfo(baseUrl: string, name: string, version: string, commit: string, date: string, isPure: boolean, appendix?: string) {
+
+			if (!appendix) {
+				appendix = `Additional Steps to Reproduce (if any):
+
+	1.
+	2.`;
+			}
+
+			let nodeModuleLoadTime: number;
+			if (this.environmentService.performance) {
+				nodeModuleLoadTime = this.computeNodeModulesLoadTime();
+			}
+
+			const metrics: IStartupMetrics = this.timerService.startupMetrics;
+
+			const osVersion = `${os.type()} ${os.arch()} ${os.release()}`;
+			const queryStringPrefix = baseUrl.indexOf('?') === -1 ? '?' : '&';
+
+			let hello = nodeModuleLoadTime + queryStringPrefix;
+			this.generatePerformanceTable();
+			console.log(hello);
+
+			return {
+				vscode: `${name} ${version}${isPure ? '' : ' **[Unsupported]**'} (${product.commit || 'Commit unknown'}, ${product.date || 'Date unknown'})`,
+				os: `${osVersion}`,
+				cpu: `${metrics.cpus.model} (${metrics.cpus.count} x ${metrics.cpus.speed})`,
+				sysMemory: `${(metrics.totalmem / (1024 * 1024 * 1024)).toFixed(2)}GB (${(metrics.freemem / (1024 * 1024 * 1024)).toFixed(2)}GB free)`,
+				procMemory: `${(metrics.meminfo.workingSetSize / 1024).toFixed(2)}MB working set (${(metrics.meminfo.peakWorkingSetSize / 1024).toFixed(2)}MB peak, ${(metrics.meminfo.privateBytes / 1024).toFixed(2)}MB private, ${(metrics.meminfo.sharedBytes / 1024).toFixed(2)}MB shared)`,
+				avgLoad: `${metrics.loadavg.map(l => Math.round(l)).join(', ')}`,
+				vm: `${metrics.isVMLikelyhood}%`,
+				startup: `${metrics.initialStartup ? 'yes' : 'no'}`,
+				screenReader: `${metrics.initialStartup ? 'yes' : 'no'}`,
+				emptyWorkspace: `${metrics.emptyWorkbench ? 'yes' : 'no'}`
+			}
 		}
-
-		let nodeModuleLoadTime: number;
-		if (this.environmentService.performance) {
-			nodeModuleLoadTime = this.computeNodeModulesLoadTime();
-		}
-
-		const metrics: IStartupMetrics = this.timerService.startupMetrics;
-
-		const osVersion = `${os.type()} ${os.arch()} ${os.release()}`;
-		const queryStringPrefix = baseUrl.indexOf('?') === -1 ? '?' : '&';
-
-		let hello = nodeModuleLoadTime + queryStringPrefix;
-		this.generatePerformanceTable();
-		console.log(hello);
-
-		const query = encodeURI(`\
-vscode=${name} ${version}${isPure ? '' : ' **[Unsupported]**'} (${product.commit || 'Commit unknown'}, ${product.date || 'Date unknown'})\
-&os=${osVersion}\
-&cpu=${metrics.cpus.model} (${metrics.cpus.count} x ${metrics.cpus.speed})\
-&sysMemory=${(metrics.totalmem / (1024 * 1024 * 1024)).toFixed(2)}GB (${(metrics.freemem / (1024 * 1024 * 1024)).toFixed(2)}GB free)\
-&procMemory=${(metrics.meminfo.workingSetSize / 1024).toFixed(2)}MB working set (${(metrics.meminfo.peakWorkingSetSize / 1024).toFixed(2)}MB peak, ${(metrics.meminfo.privateBytes / 1024).toFixed(2)}MB private, ${(metrics.meminfo.sharedBytes / 1024).toFixed(2)}MB shared)\
-&avgLoad=${metrics.loadavg.map(l => Math.round(l)).join(', ')}\
-&vm=${metrics.isVMLikelyhood}%\
-&startup=${metrics.initialStartup ? 'yes' : 'no'}\
-&screenReader=${metrics.initialStartup ? 'yes' : 'no'}\
-&emptyWorkspace=${metrics.emptyWorkbench ? 'yes' : 'no'}\
-`);
-		return `https://vscode-perf-issue.surge.sh?${query}`;
-
-// 		const body = encodeURIComponent(
-// 			`- VSCode Version: <code>${name} ${version}${isPure ? '' : ' **[Unsupported]**'} (${product.commit || 'Commit unknown'}, ${product.date || 'Date unknown'})</code>
-// - OS Version: <code>${osVersion}</code>
-// - CPUs: <code>${metrics.cpus.model} (${metrics.cpus.count} x ${metrics.cpus.speed})</code>
-// - Memory (System): <code>${(metrics.totalmem / (1024 * 1024 * 1024)).toFixed(2)}GB (${(metrics.freemem / (1024 * 1024 * 1024)).toFixed(2)}GB free)</code>
-// - Memory (Process): <code>${(metrics.meminfo.workingSetSize / 1024).toFixed(2)}MB working set (${(metrics.meminfo.peakWorkingSetSize / 1024).toFixed(2)}MB peak, ${(metrics.meminfo.privateBytes / 1024).toFixed(2)}MB private, ${(metrics.meminfo.sharedBytes / 1024).toFixed(2)}MB shared)</code>
-// - Load (avg): <code>${metrics.loadavg.map(l => Math.round(l)).join(', ')}</code>
-// - VM: <code>${metrics.isVMLikelyhood}%</code>
-// - Initial Startup: <code>${metrics.initialStartup ? 'yes' : 'no'}</code>
-// - Screen Reader: <code>${metrics.hasAccessibilitySupport ? 'yes' : 'no'}</code>
-// - Empty Workspace: <code>${metrics.emptyWorkbench ? 'yes' : 'no'}</code>
-// - Timings:
-
-// ${this.generatePerformanceTable(nodeModuleLoadTime)}
-
-// ---
-
-// ${appendix}`
-// 		);
-
-// 		return `${baseUrl}${queryStringPrefix}body=${body}`;
-	}
 
 	private computeNodeModulesLoadTime(): number {
 		const stats = <ILoaderEvent[]>(<any>require).getStats();
