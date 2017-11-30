@@ -52,7 +52,7 @@ export interface ParsedArgs {
 	'inspect-all'?: boolean;
 	'ps'?: boolean;
 	'inspect-all-ipc'?: string;
-	'verbose-logging'?: string;
+	'verbose-logging'?: string | boolean;
 }
 
 export const IEnvironmentService = createDecorator<IEnvironmentService>('environmentService');

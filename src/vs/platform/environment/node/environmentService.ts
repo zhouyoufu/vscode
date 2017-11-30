@@ -130,10 +130,7 @@ export class EnvironmentService implements IEnvironmentService {
 
 	@memoize
 	get verboseLogging(): boolean {
-		const vl = this._args['verbose-logging'];
-		console.log(vl);
-		console.log(typeof vl);
-		return typeof vl !== 'undefined';
+		return typeof this._args['verbose-logging'] !== 'undefined';
 	}
 
 	@memoize
@@ -152,14 +149,11 @@ export class EnvironmentService implements IEnvironmentService {
 			return false;
 		}
 
-		if (arg === true || arg.length === 0) {
+		if (arg === true) {
 			return true;
 		}
 
-		if (Array.isArray(arg)) {
-			return arg.map(x => x.toLowerCase());
-		}
-		return [arg.toLowerCase()];
+		return arg.toLowerCase().split(',');
 	}
 
 	get disableUpdates(): boolean { return !!this._args['disable-updates']; }
