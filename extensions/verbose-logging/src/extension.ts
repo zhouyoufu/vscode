@@ -22,7 +22,7 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(vscode.commands.registerCommand('verbose-logging.stopLogging', uploadOrPreview));
 }
 
-async function uploadOrPreview() {
+async function uploadOrPreview(): Promise<string | undefined> {
 	const selection = await vscode.window.showInformationMessage('Upload or preview???', 'Preview', 'Upload', 'Learn More');
 	if (!selection) {
 		return;
@@ -43,6 +43,8 @@ async function uploadOrPreview() {
 			const message = `Upload successful! Your log ID: ${blobName}`;
 			vscode.window.showInformationMessage(message);
 			console.log(message);
+
+			return blobName;
 		} catch (e) {
 			vscode.window.showErrorMessage(`Upload failed: ${e.message}`);
 			console.error(e);
@@ -53,6 +55,8 @@ async function uploadOrPreview() {
 		const doc = await vscode.workspace.openTextDocument({ language: 'markdown', content: 'Info about logging!' });
 		vscode.window.showTextDocument(doc);
 	}
+
+	return;
 }
 
 export default class LoggingStatus {
