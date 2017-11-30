@@ -47,6 +47,8 @@ import { mnemonicButtonLabel } from 'vs/base/common/labels';
 import { listProcesses, ProcessItem } from 'vs/base/node/ps';
 import { repeat, pad } from 'vs/base/common/strings';
 
+const DEBUG_FLAGS_PATTERN = /\s--(inspect|debug)(-brk)?(=([0-9]+))/;
+
 function createServices(args: ParsedArgs): IInstantiationService {
 	const services = new ServiceCollection();
 
@@ -228,7 +230,7 @@ function formatProcessList(info: IMainProcessInfo, rootProcess: ProcessItem): st
 	output.push(`VM:               ${Math.round((virtualMachineHint.value() * 100))}%`);
 	output.push(`Screen Reader:    ${app.isAccessibilitySupportEnabled() ? 'yes' : 'no'}`);
 	output.push('');
-	output.push('CPU %\tMem MB\tProcess');
+	output.push('CPU %\tMem MB\tDbg Prt\tProcess');
 
 	formatProcessItem(mapPidToWindowTitle, output, rootProcess, 0);
 
@@ -251,7 +253,14 @@ function formatProcessItem(mapPidToWindowTitle: Map<number, string>, output: str
 			name = `${name} (${mapPidToWindowTitle.get(item.pid)})`;
 		}
 	}
-	output.push(`${pad(Number(item.load.toFixed(0)), 5, ' ')}\t${pad(Number(((os.totalmem() * (item.mem / 100)) / MB).toFixed(0)), 6, ' ')}\t${name}`);
+
+	const matches = DEBUG_FLAGS_PATTERN.exec(item.cmd);
+	let debugPort = '';
+	if (matches && matches.length === 5 && matches[4]) {
+		debugPort = matches[4];
+	}
+
+	output.push(`${pad(Number(item.load.toFixed(0)), 5, ' ')}\t${pad(Number(((os.totalmem() * (item.mem / 100)) / MB).toFixed(0)), 6, ' ')}\t${pad(debugPort, 7, ' ')}\t${name}`);
 
 	// Recurse into children if any
 	if (Array.isArray(item.children)) {
