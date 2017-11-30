@@ -69,7 +69,7 @@ export default class LoggingStatus {
 		this.logStatusBarEntry = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, Number.MIN_VALUE);
 		this.logStatusBarEntry.text = 'LOGGING MODE';
 		this.logStatusBarEntry.tooltip = logPath;
-		this.logStatusBarEntry.command = 'verbose-logging.stopLogging';
+		this.logStatusBarEntry.command = 'verbose-logging.previewOrUpload';
 
 		this.logStatusBarEntry.show();
 	}
