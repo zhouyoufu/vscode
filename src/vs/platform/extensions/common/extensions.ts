@@ -125,4 +125,6 @@ export interface IExtensionService {
 	 * Stops the extension host.
 	 */
 	stopExtensionHost(): void;
+
+	getLoggingDirectory(): string;
 }

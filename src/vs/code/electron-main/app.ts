@@ -303,10 +303,9 @@ export class CodeApplication {
 		services.set(IWindowsService, new SyncDescriptor(WindowsService, this.sharedProcess));
 		services.set(ILaunchService, new SyncDescriptor(LaunchService));
 
-		const loggingDirectory = this.environmentService.loggingDirectory && join(this.environmentService.loggingDirectory, 'main');
+		const loggingDirectory = this.environmentService.verboseLogging && join(this.environmentService.loggingDirectory, 'main');
 
-		// Telemtry
-		// if (this.environmentService.isBuilt && !this.environmentService.isExtensionDevelopment && !this.environmentService.args['disable-telemetry'] && !!product.enableTelemetry) {
+		// Telemetry
 		const channel = getDelayedChannel<ITelemetryAppenderChannel>(this.sharedProcessClient.then(c => c.getChannel('telemetryAppender')));
 		const appender = new TelemetryAppenderClient(channel);
 		const commonProperties = resolveCommonProperties(product.commit, pkg.version, machineId, this.environmentService.installSourcePath, loggingDirectory);
@@ -314,9 +313,6 @@ export class CodeApplication {
 		const config: ITelemetryServiceConfig = { appender, commonProperties, piiPaths };
 
 		services.set(ITelemetryService, new SyncDescriptor(TelemetryService, config));
-		// } else {
-		// services.set(ITelemetryService, NullTelemetryService);
-		// }
 
 		return this.instantiationService.createChild(services);
 	}

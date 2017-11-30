@@ -15,37 +15,43 @@ import * as azure from 'azure-storage';
 var archiver = require('archiver');
 
 export function activate(context: vscode.ExtensionContext) {
-	const loggingDir = vscode.env.globalLoggingDirectory;
-	if (loggingDir) {
-		context.subscriptions.push(new LoggingStatus(loggingDir));
+	if (context.isLoggingEnabled()) {
+		context.subscriptions.push(new LoggingStatus(vscode.env.globalLoggingDirectory!));
+	}
 
-		context.subscriptions.push(vscode.commands.registerCommand('verbose-logging.stopLogging', async () => {
-			const selection = await vscode.window.showInformationMessage('Upload or preview???', 'Preview', 'Upload', 'Learn More');
-			if (!selection) {
-				return;
-			}
+	context.subscriptions.push(vscode.commands.registerCommand('verbose-logging.stopLogging', uploadOrPreview));
+}
 
-			if (selection === 'Preview') {
-				await vscode.commands.executeCommand('_workbench.action.files.revealInOS', vscode.Uri.parse(loggingDir));
-			}
+async function uploadOrPreview() {
+	const selection = await vscode.window.showInformationMessage('Upload or preview???', 'Preview', 'Upload', 'Learn More');
+	if (!selection) {
+		return;
+	}
 
-			if (selection === 'Upload') {
-				try {
-					const blobName = await upload(loggingDir!);
-					const message = `Upload successful! Your log ID: ${blobName}`;
-					vscode.window.showInformationMessage(message);
-					console.log(message);
-				} catch (e) {
-					vscode.window.showErrorMessage(`Upload failed: ${e.message}`);
-					console.error(e);
-				}
-			}
+	const loggingDir = vscode.env.globalLoggingDirectory!;
+	if (!fs.existsSync(loggingDir)) {
+		return;
+	}
 
-			if (selection === 'Learn More') {
-				const doc = await vscode.workspace.openTextDocument({ language: 'markdown', content: 'Info about logging!' });
-				vscode.window.showTextDocument(doc);
-			}
-		}));
+	if (selection === 'Preview') {
+		await vscode.commands.executeCommand('_workbench.action.files.revealInOS', vscode.Uri.parse(loggingDir));
+	}
+
+	if (selection === 'Upload') {
+		try {
+			const blobName = await upload(loggingDir!);
+			const message = `Upload successful! Your log ID: ${blobName}`;
+			vscode.window.showInformationMessage(message);
+			console.log(message);
+		} catch (e) {
+			vscode.window.showErrorMessage(`Upload failed: ${e.message}`);
+			console.error(e);
+		}
+	}
+
+	if (selection === 'Learn More') {
+		const doc = await vscode.workspace.openTextDocument({ language: 'markdown', content: 'Info about logging!' });
+		vscode.window.showTextDocument(doc);
 	}
 }
 

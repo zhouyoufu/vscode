@@ -55,7 +55,6 @@ const options: minimist.Opts = {
 		'disable-updates',
 		'disable-crash-reporter',
 		'skip-add-to-recently-opened',
-		'verbose-logging',
 		'inspect-all',
 		'ps'
 	],

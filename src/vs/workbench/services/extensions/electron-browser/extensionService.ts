@@ -489,6 +489,10 @@ export class ExtensionService implements IExtensionService {
 	public _onExtensionActivated(extensionId: string, startup: boolean, codeLoadingTime: number, activateCallTime: number, activateResolvedTime: number): void {
 		this._extensionHostProcessActivationTimes[extensionId] = new ActivationTimes(startup, codeLoadingTime, activateCallTime, activateResolvedTime);
 	}
+
+	public getLoggingDirectory(): string {
+		return this._environmentService.loggingDirectory;
+	}
 }
 
 export class Logger implements ILog {

@@ -127,7 +127,8 @@
 			},
 			"urlFilter": "*index.html*",
 			"runtimeArgs": [
-				"--inspect=5875"
+				"--inspect=5875",
+				"--verbose-logging"
 			],
 			"webRoot": "${workspaceFolder}"
 		},

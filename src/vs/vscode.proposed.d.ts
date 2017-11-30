@@ -253,7 +253,7 @@ declare module 'vscode' {
 		 * The absolute file path of a directory where the extension can write its log files.
 		 * Undefined if logging is disabled.
 		 */
-		loggingDirectory: string | undefined;
+		getLoggingDirectory(): Promise<string>;
 
 		/**
 		 * Check if logging is enabled.
@@ -267,9 +267,6 @@ declare module 'vscode' {
 	 * Namespace describing the environment the editor runs in.
 	 */
 	export namespace env {
-		/**
-		 *
-		 */
 		export let globalLoggingDirectory: string | undefined;
 	}
 }

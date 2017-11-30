@@ -9,6 +9,7 @@ import { IExtensionService } from 'vs/platform/extensions/common/extensions';
 import { MainThreadExtensionServiceShape, MainContext, IExtHostContext } from '../node/extHost.protocol';
 import { ExtensionService } from 'vs/workbench/services/extensions/electron-browser/extensionService';
 import { extHostNamedCustomer } from 'vs/workbench/api/electron-browser/extHostCustomers';
+import { TPromise } from 'vs/base/common/winjs.base';
 
 @extHostNamedCustomer(MainContext.MainThreadExtensionService)
 export class MainThreadExtensionService implements MainThreadExtensionServiceShape {
@@ -34,5 +35,8 @@ export class MainThreadExtensionService implements MainThreadExtensionServiceSha
 		this._extensionService._onExtensionActivated(extensionId, startup, codeLoadingTime, activateCallTime, activateResolvedTime);
 	}
 	$onExtensionActivationFailed(extensionId: string): void {
+	}
+	$getLoggingDirectory(): TPromise<string> {
+		return TPromise.wrap(this._extensionService.getLoggingDirectory());
 	}
 }

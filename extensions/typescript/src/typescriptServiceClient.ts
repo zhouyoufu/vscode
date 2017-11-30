@@ -304,7 +304,7 @@ export default class TypeScriptServiceClient implements ITypeScriptServiceClient
 	private startService(resendModels: boolean = false): Thenable<cp.ChildProcess> {
 		let currentVersion = this.versionPicker.currentVersion;
 
-		return this.servicePromise = new Promise<cp.ChildProcess>((resolve, reject) => {
+		return this.servicePromise = new Promise<cp.ChildProcess>(async (resolve, reject) => {
 			this.info(`Using tsserver from: ${currentVersion.path}`);
 			if (!fs.existsSync(currentVersion.tsServerPath)) {
 				window.showWarningMessage(localize('noServerFound', 'The path {0} doesn\'t point to a valid tsserver install. Falling back to bundled TypeScript version.', currentVersion.path));
@@ -325,7 +325,7 @@ export default class TypeScriptServiceClient implements ITypeScriptServiceClient
 					execArgv: [] // [`--debug-brk=5859`]
 				};
 
-				electron.fork(currentVersion.tsServerPath, this.getTsServerArgs(currentVersion), options, this.logger, (err: any, childProcess: cp.ChildProcess | null) => {
+				electron.fork(currentVersion.tsServerPath, await this.getTsServerArgs(currentVersion), options, this.logger, (err: any, childProcess: cp.ChildProcess | null) => {
 					if (err || !childProcess) {
 						this.lastError = err;
 						this.error('Starting TSServer failed with error.', err);
@@ -836,7 +836,7 @@ export default class TypeScriptServiceClient implements ITypeScriptServiceClient
 		this.logTelemetry(telemetryData.telemetryEventName, properties);
 	}
 
-	private getTsServerArgs(currentVersion: TypeScriptVersion): string[] {
+	private async getTsServerArgs(currentVersion: TypeScriptVersion): Promise<string[]> {
 		const args: string[] = [];
 
 		if (this.apiVersion.has206Features()) {
@@ -863,7 +863,9 @@ export default class TypeScriptServiceClient implements ITypeScriptServiceClient
 		if (this.apiVersion.has222Features()) {
 			if (this._configuration.tsServerLogLevel !== TsServerLogLevel.Off) {
 				try {
-					const logDir = this.host.loggingDirectory || fs.mkdtempSync(path.join(os.tmpdir(), `vscode-tsserver-log-`));
+					const logDir = this.host.loggingDirectory ?
+						await this.host.loggingDirectory :
+						fs.mkdtempSync(path.join(os.tmpdir(), `vscode-tsserver-log-`));
 					this.tsServerLogFile = path.join(logDir, `tsserver.log`);
 					this.info(`TSServer log file: ${this.tsServerLogFile}`);
 				} catch (e) {

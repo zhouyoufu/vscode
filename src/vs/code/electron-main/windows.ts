@@ -1079,7 +1079,7 @@ export class WindowsManager implements IWindowsMainService {
 		configuration.filesToDiff = options.filesToDiff;
 		configuration.filesToWait = options.filesToWait;
 		configuration.nodeCachedDataDir = this.environmentService.nodeCachedDataDir;
-		configuration.loggingDirectory = this.environmentService.loggingDirectory;
+		configuration.loggingDirectory = this.environmentService.verboseLogging && this.environmentService.loggingDirectory;
 
 		// if we know the backup folder upfront (for empty windows to restore), we can set it
 		// directly here which helps for restoring UI state associated with that window.

@@ -1,5 +1,5 @@
 {
-	"name": "vscode-verbose-logging",
+	"name": "verbose-logging",
 	"description": "Tools for logging",
 	"version": "0.0.1",
 	"publisher": "vscode",
@@ -8,7 +8,14 @@
 	"engines": {
 		"vscode": "*"
 	},
-	"contributes": {},
+	"contributes": {
+		"commands": [
+			{
+				"command": "verbose-logging.previewOrUpload",
+				"title": "Preview or Upload Diagnostic Artifacts"
+			}
+		]
+	},
 	"activationEvents": [
 		"*"
 	],

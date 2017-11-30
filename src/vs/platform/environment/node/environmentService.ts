@@ -129,16 +129,20 @@ export class EnvironmentService implements IEnvironmentService {
 	get nodeCachedDataDir(): string { return this.isBuilt ? path.join(this.userDataPath, 'CachedData', product.commit || new Array(41).join('0')) : undefined; }
 
 	@memoize
+	get verboseLogging(): boolean {
+		const vl = this._args['verbose-logging'];
+		console.log(vl);
+		console.log(typeof vl);
+		return typeof vl !== 'undefined';
+	}
+
+	@memoize
 	get loggingDirectory(): string | undefined {
 		if (this._loggingDirectory) {
 			return this._loggingDirectory;
 		}
 
-		console.log('inventing log dir');
-		if (this._args['verbose-logging']) {
-			return fs.mkdtempSync(path.join(os.tmpdir(), `vscode-log-`));
-		}
-		return undefined;
+		return fs.mkdtempSync(path.join(os.tmpdir(), `vscode-log-`));
 	}
 
 	@memoize

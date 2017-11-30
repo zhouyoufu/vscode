@@ -78,7 +78,6 @@ export interface IInitData {
 	telemetryInfo: ITelemetryInfo;
 	args: ParsedArgs;
 	execPath: string;
-	loggingDirectory: string | undefined;
 	loggingScopes: string[] | boolean;
 }
 
@@ -357,6 +356,7 @@ export interface MainThreadExtensionServiceShape extends IDisposable {
 	$localShowMessage(severity: Severity, msg: string): void;
 	$onExtensionActivated(extensionId: string, startup: boolean, codeLoadingTime: number, activateCallTime: number, activateResolvedTime: number): void;
 	$onExtensionActivationFailed(extensionId: string): void;
+	$getLoggingDirectory(): TPromise<string>;
 }
 
 export interface SCMProviderFeatures {

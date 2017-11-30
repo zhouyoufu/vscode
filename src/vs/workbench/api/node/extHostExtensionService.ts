@@ -120,7 +120,6 @@ export class ExtHostExtensionService implements ExtHostExtensionServiceShape {
 	private readonly _proxy: MainThreadExtensionServiceShape;
 	private _activator: ExtensionsActivator;
 	private _extensionPathIndex: TPromise<TernarySearchTree<IExtensionDescription>>;
-	private _loggingDirectory: string | undefined;
 	private _loggingScopes: string[] | boolean;
 
 	/**
@@ -140,7 +139,6 @@ export class ExtHostExtensionService implements ExtHostExtensionServiceShape {
 		this._storagePath = new ExtensionStoragePath(initData.workspace, initData.environment);
 		this._proxy = this._threadService.get(MainContext.MainThreadExtensionService);
 		this._activator = null;
-		this._loggingDirectory = initData.loggingDirectory;
 		this._loggingScopes = initData.loggingScopes;
 
 		// initialize API first (i.e. do not release barrier until the API is initialized)
@@ -335,7 +333,6 @@ export class ExtHostExtensionService implements ExtHostExtensionServiceShape {
 			workspaceState.whenReady,
 			this._storagePath.whenReady
 		]).then(() => {
-			const extensionLoggingPath = this._loggingDirectory && join(this._loggingDirectory, extensionDescription.id);
 			return Object.freeze(<IExtensionContext>{
 				globalState,
 				workspaceState,
@@ -343,19 +340,19 @@ export class ExtHostExtensionService implements ExtHostExtensionServiceShape {
 				get extensionPath() { return extensionDescription.extensionFolderPath; },
 				storagePath: this._storagePath.value(extensionDescription),
 				asAbsolutePath: (relativePath: string) => { return join(extensionDescription.extensionFolderPath, relativePath); },
-				get loggingDirectory() {
-					if (!extensionLoggingPath) {
-						return undefined;
-					}
+				getLoggingDirectory: () => {
+					return this._proxy.$getLoggingDirectory().then(loggingDirectory => {
+						const extensionLoggingPath = join(loggingDirectory, extensionDescription.id);
+						if (!existsSync(extensionLoggingPath)) {
+							mkdirSync(extensionLoggingPath);
+						}
 
-					if (!existsSync(extensionLoggingPath)) {
-						mkdirSync(extensionLoggingPath);
-					}
+						return extensionLoggingPath;
+					});
 
-					return extensionLoggingPath;
 				},
 				isLoggingEnabled: (scope?: string): boolean => {
-					if (!extensionLoggingPath || !this._loggingScopes) {
+					if (!this._loggingScopes) {
 						return false;
 					}
 
