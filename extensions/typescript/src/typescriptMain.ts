@@ -430,6 +430,7 @@ class TypeScriptServiceClientHost implements ITypeScriptServiceClientHost {
 	private readonly languagePerId = new Map<string, LanguageProvider>();
 	private readonly disposables: Disposable[] = [];
 	private readonly versionStatus: VersionStatus;
+	private reportStyleCheckAsWarnings: boolean = true;
 
 	constructor(
 		descriptions: LanguageDescription[],
@@ -452,7 +453,7 @@ class TypeScriptServiceClientHost implements ITypeScriptServiceClientHost {
 		configFileWatcher.onDidDelete(handleProjectCreateOrDelete, this, this.disposables);
 		configFileWatcher.onDidChange(handleProjectChange, this, this.disposables);
 
-		this.versionStatus = new VersionStatus();
+		this.versionStatus = new VersionStatus(resource => this.client.normalizePath(resource));
 		this.disposables.push(this.versionStatus);
 
 		this.client = new TypeScriptServiceClient(this, workspaceState, this.versionStatus, plugins);
@@ -496,6 +497,9 @@ class TypeScriptServiceClientHost implements ITypeScriptServiceClientHost {
 		this.client.onTsServerStarted(() => {
 			this.triggerAllDiagnostics();
 		});
+
+		workspace.onDidChangeConfiguration(this.configurationChanged, this, this.disposables);
+		this.configurationChanged();
 	}
 
 	public dispose(): void {
@@ -601,6 +605,11 @@ class TypeScriptServiceClientHost implements ITypeScriptServiceClientHost {
 				}
 				return;
 		}
+	}
+
+	private configurationChanged(): void {
+		const config = workspace.getConfiguration('typescript');
+		this.reportStyleCheckAsWarnings = config.get('reportStyleChecksAsWarnings', true);
 	}
 
 	private async findLanguage(file: string): Promise<LanguageProvider | undefined> {
@@ -717,8 +726,7 @@ class TypeScriptServiceClientHost implements ITypeScriptServiceClientHost {
 	}
 
 	private getDiagnosticSeverity(diagnostic: Proto.Diagnostic): DiagnosticSeverity {
-
-		if (this.reportStyleCheckAsWarnings() && this.isStyleCheckDiagnostic(diagnostic.code)) {
+		if (this.reportStyleCheckAsWarnings && this.isStyleCheckDiagnostic(diagnostic.code)) {
 			return DiagnosticSeverity.Warning;
 		}
 
@@ -736,10 +744,5 @@ class TypeScriptServiceClientHost implements ITypeScriptServiceClientHost {
 
 	private isStyleCheckDiagnostic(code: number | undefined): boolean {
 		return code ? styleCheckDiagnostics.indexOf(code) !== -1 : false;
-	}
-
-	private reportStyleCheckAsWarnings() {
-		const config = workspace.getConfiguration('typescript');
-		return config.get('reportStyleChecksAsWarnings', true);
 	}
 }
