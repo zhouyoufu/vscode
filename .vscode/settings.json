@@ -21,7 +21,7 @@
 		"extensions/**/out/**": true,
 		"test/smoke/out/**": true
 	},
-	"tslint.enable": true,
+	"tslint.enable": false,
 	"lcov.path": [
 		"./.build/coverage/lcov.info",
 		"./.build/coverage-single/lcov.info"

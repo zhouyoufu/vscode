@@ -8,8 +8,10 @@ export const activate = (context: vscode.ExtensionContext) => {
       'vscode-perf-issue',
       {
         provideTextDocumentContent(uri: vscode.Uri): string {
-          const htmlContent = fs.readFileSync(path.resolve(context.asAbsolutePath('src/index.html')), 'utf-8')
-          return htmlContent.replace('{{path}}', 'file://' + context.asAbsolutePath('dist/build.js'))
+          let htmlContent = fs.readFileSync(path.resolve(context.asAbsolutePath('src/index.html')), 'utf-8')
+          htmlContent = htmlContent.replace('{{logoPath}}', 'file://' + context.asAbsolutePath('embed/logo.png'))
+					htmlContent = htmlContent.replace('{{path}}', 'file://' + context.asAbsolutePath('embed/build.js'))
+					return htmlContent
         }
       }
     )
