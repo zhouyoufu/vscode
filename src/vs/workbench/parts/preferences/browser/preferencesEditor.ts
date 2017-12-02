@@ -29,7 +29,7 @@ import {
 } from 'vs/workbench/parts/preferences/common/preferences';
 import { SettingsEditorModel, DefaultSettingsEditorModel } from 'vs/workbench/parts/preferences/common/preferencesModels';
 import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
-import { SearchWidget, SettingsTargetsWidget, SettingsTarget } from 'vs/workbench/parts/preferences/browser/preferencesWidgets';
+import { SearchWidget, SettingsTargetsWidget, SettingsTarget, DefaultSettingsType } from 'vs/workbench/parts/preferences/browser/preferencesWidgets';
 import { ContextKeyExpr, IContextKeyService, IContextKey } from 'vs/platform/contextkey/common/contextkey';
 import { registerEditorContribution, Command, IEditorContributionCtor } from 'vs/editor/browser/editorExtensions';
 import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
@@ -55,7 +55,7 @@ import { IWorkspaceContextService } from 'vs/platform/workspace/common/workspace
 import Event, { Emitter } from 'vs/base/common/event';
 import { Registry } from 'vs/platform/registry/common/platform';
 import { MessageController } from 'vs/editor/contrib/message/messageController';
-import { ConfigurationTarget } from 'vs/platform/configuration/common/configuration';
+import { ConfigurationTarget, SettingsSearchType } from 'vs/platform/configuration/common/configuration';
 import { IHashService } from 'vs/workbench/services/hash/common/hashService';
 import { ConfigurationScope } from 'vs/platform/configuration/common/configurationRegistry';
 
@@ -155,6 +155,7 @@ export class PreferencesEditor extends BaseEditor {
 		this.sideBySidePreferencesWidget = this._register(this.instantiationService.createInstance(SideBySidePreferencesWidget, editorsContainer));
 		this._register(this.sideBySidePreferencesWidget.onFocus(() => this.lastFocusedWidget = this.sideBySidePreferencesWidget));
 		this._register(this.sideBySidePreferencesWidget.onDidSettingsTargetChange(target => this.switchSettings(target)));
+		this._register(this.sideBySidePreferencesWidget.onDidSearchTypeChange(type => this.onSettingsSearchTypeChanged(type)));
 
 		this.preferencesRenderers = this._register(new PreferencesRenderers(this.preferencesSearchService));
 
@@ -272,6 +273,16 @@ export class PreferencesEditor extends BaseEditor {
 				this.preferencesService.switchSettings(ConfigurationTarget.WORKSPACE_FOLDER, target);
 			}
 		});
+	}
+
+	private onSettingsSearchTypeChanged(searchType: SettingsSearchType): void {
+		if (searchType === SettingsSearchType.FILTER && this.searchWidget.fuzzyEnabled) {
+			this.searchWidget.fuzzyEnabled = false;
+			this.onInputChanged();
+		} else if (searchType === SettingsSearchType.FUZZY && !this.searchWidget.fuzzyEnabled) {
+			this.searchWidget.fuzzyEnabled = true;
+			this.onInputChanged();
+		}
 	}
 
 	private filterPreferences(): TPromise<void> {
@@ -581,12 +592,16 @@ class SideBySidePreferencesWidget extends Widget {
 	private editablePreferencesEditorContainer: HTMLElement;
 
 	private settingsTargetsWidget: SettingsTargetsWidget;
+	private settingsSearchTypeWidget: DefaultSettingsType;
 
 	private _onFocus: Emitter<void> = new Emitter<void>();
 	readonly onFocus: Event<void> = this._onFocus.event;
 
 	private _onDidSettingsTargetChange: Emitter<SettingsTarget> = new Emitter<SettingsTarget>();
 	readonly onDidSettingsTargetChange: Event<SettingsTarget> = this._onDidSettingsTargetChange.event;
+
+	private _onDidSearchTypeChange: Emitter<SettingsSearchType> = new Emitter<SettingsSearchType>();
+	readonly onDidSearchTypeChange: Event<SettingsSearchType> = this._onDidSearchTypeChange.event;
 
 	private lastFocusedEditor: BaseEditor;
 
@@ -614,7 +629,7 @@ class SideBySidePreferencesWidget extends Widget {
 		defaultPreferencesHeaderContainer.style.height = '30px';
 		defaultPreferencesHeaderContainer.style.marginBottom = '4px';
 		this.defaultPreferencesHeader = DOM.append(defaultPreferencesHeaderContainer, DOM.$('div.default-preferences-header'));
-		this.defaultPreferencesHeader.textContent = nls.localize('defaultSettings', "Default Settings");
+		// this.defaultPreferencesHeader.textContent = nls.localize('defaultSettings', "Default Settings");
 
 		this.defaultPreferencesEditor = this._register(this.instantiationService.createInstance(DefaultPreferencesEditor));
 		this.defaultPreferencesEditor.create(new Builder(this.defaultPreferencesEditorContainer));
@@ -628,6 +643,10 @@ class SideBySidePreferencesWidget extends Widget {
 		editablePreferencesHeaderContainer.style.marginBottom = '4px';
 		this.settingsTargetsWidget = this._register(this.instantiationService.createInstance(SettingsTargetsWidget, editablePreferencesHeaderContainer));
 		this._register(this.settingsTargetsWidget.onDidTargetChange(target => this._onDidSettingsTargetChange.fire(target)));
+
+		this.settingsSearchTypeWidget = this._register(this.instantiationService.createInstance(DefaultSettingsType, defaultPreferencesHeaderContainer));
+		this._register(this.settingsSearchTypeWidget.onDidSearchTypeChange(type => this._onDidSearchTypeChange.fire(type)));
+		this.settingsSearchTypeWidget.searchType = SettingsSearchType.FILTER;
 
 		this._register(attachStylerCallback(this.themeService, { scrollbarShadow }, colors => {
 			const shadow = colors.scrollbarShadow ? colors.scrollbarShadow.toString() : null;
@@ -650,7 +669,7 @@ class SideBySidePreferencesWidget extends Widget {
 		return TPromise.join([this.updateInput(this.defaultPreferencesEditor, defaultPreferencesEditorInput, DefaultSettingsEditorContribution.ID, editablePreferencesEditorInput.getResource(), options),
 		this.updateInput(this.editablePreferencesEditor, editablePreferencesEditorInput, SettingsEditorContribution.ID, defaultPreferencesEditorInput.getResource(), options)])
 			.then(([defaultPreferencesRenderer, editablePreferencesRenderer]) => {
-				this.defaultPreferencesHeader.textContent = defaultPreferencesRenderer && (<DefaultSettingsEditorModel>defaultPreferencesRenderer.preferencesModel).configurationScope === ConfigurationScope.RESOURCE ? nls.localize('defaultFolderSettings', "Default Folder Settings") : nls.localize('defaultSettings', "Default Settings");
+				// this.defaultPreferencesHeader.textContent = defaultPreferencesRenderer && (<DefaultSettingsEditorModel>defaultPreferencesRenderer.preferencesModel).configurationScope === ConfigurationScope.RESOURCE ? nls.localize('defaultFolderSettings', "Default Folder Settings") : nls.localize('defaultSettings', "Default Settings");
 				return { defaultPreferencesRenderer, editablePreferencesRenderer };
 			});
 	}

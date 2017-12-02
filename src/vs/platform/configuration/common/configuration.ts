@@ -36,6 +36,11 @@ export enum ConfigurationTarget {
 	MEMORY
 }
 
+export enum SettingsSearchType {
+	FILTER = 1,
+	FUZZY
+}
+
 export interface IConfigurationChangeEvent {
 
 	source: ConfigurationTarget;

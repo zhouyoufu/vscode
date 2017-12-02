@@ -31,7 +31,7 @@ import { buttonBackground, buttonForeground, badgeForeground, badgeBackground, c
 import { IContextKey } from 'vs/platform/contextkey/common/contextkey';
 import { Separator, ActionBar, ActionsOrientation, BaseActionItem } from 'vs/base/browser/ui/actionbar/actionbar';
 import { MarkdownString } from 'vs/base/common/htmlContent';
-import { ConfigurationTarget } from 'vs/platform/configuration/common/configuration';
+import { ConfigurationTarget, SettingsSearchType } from 'vs/platform/configuration/common/configuration';
 import { IMarginData } from 'vs/editor/browser/controller/mouseTarget';
 import { render as renderOcticons } from 'vs/base/browser/ui/octiconLabel/octiconLabel';
 
@@ -513,7 +513,80 @@ export class SettingsTargetsWidget extends Widget {
 		this.workspaceSettings.enabled = this.contextService.getWorkbenchState() !== WorkbenchState.EMPTY;
 		this.folderSettings.getAction().enabled = this.contextService.getWorkbenchState() === WorkbenchState.WORKSPACE && this.contextService.getWorkspace().folders.length > 0;
 	}
+}
 
+export class DefaultSettingsType extends Widget {
+
+	private settingsSwitcherBar: ActionBar;
+	private filterAction: Action;
+	private fuzzySearchAction: Action;
+	private folderSettings: FolderSettingsActionItem;
+
+	private _searchType: SettingsSearchType;
+
+	private _onDidSearchTypeChange: Emitter<SettingsSearchType> = new Emitter<SettingsSearchType>();
+	public readonly onDidSearchTypeChange: Event<SettingsSearchType> = this._onDidSearchTypeChange.event;
+
+	constructor(
+		parent: HTMLElement,
+		@IWorkspaceContextService private contextService: IWorkspaceContextService
+	) {
+		super();
+		this.create(parent);
+		this._register(this.contextService.onDidChangeWorkbenchState(() => this.onWorkbenchStateChanged()));
+		this._register(this.contextService.onDidChangeWorkspaceFolders(() => this.update()));
+	}
+
+	private create(parent: HTMLElement): void {
+		const settingsTabsWidget = DOM.append(parent, DOM.$('.settings-tabs-widget'));
+		this.settingsSwitcherBar = this._register(new ActionBar(settingsTabsWidget, {
+			orientation: ActionsOrientation.HORIZONTAL_REVERSE,
+			ariaLabel: localize('settingsSwitcherBarAriaLabel', "Settings Switcher"),
+			animated: false,
+			actionItemProvider: (action: Action) => action.id === 'folderSettings' ? this.folderSettings : null
+		}));
+
+		this.filterAction = new Action('filterSettings', localize('filterSettings', "Filtered Results"), '.settings-tab', true, () => this.updateTarget(SettingsSearchType.FILTER));
+		this.filterAction.tooltip = this.filterAction.label;
+
+		this.fuzzySearchAction = new Action('fuzzySearchSettings', localize('fuzzySearchSettings', "Fuzzy Search Results"), '.settings-tab', true, () => this.updateTarget(SettingsSearchType.FUZZY));
+		this.fuzzySearchAction.tooltip = this.fuzzySearchAction.label;
+
+		this.update();
+
+		this.settingsSwitcherBar.push([this.fuzzySearchAction, this.filterAction]);
+	}
+
+	public get searchType(): SettingsSearchType {
+		return this._searchType;
+	}
+
+	public set searchType(searchType: SettingsSearchType) {
+		this._searchType = searchType;
+		this.filterAction.checked = this.searchType === SettingsSearchType.FILTER;
+		this.fuzzySearchAction.checked = this.searchType === SettingsSearchType.FUZZY;
+	}
+
+	private onWorkbenchStateChanged(): void {
+		// this.folderSettings.folder = null;
+		// this.update();
+		// if (this.searchType === ConfigurationTarget.WORKSPACE && this.contextService.getWorkbenchState() === WorkbenchState.WORKSPACE) {
+		// 	this.updateTarget(ConfigurationTarget.USER);
+		// }
+	}
+
+	private updateTarget(settingsTarget: SettingsSearchType): TPromise<void> {
+		if (this.searchType !== settingsTarget) {
+			this.searchType = settingsTarget;
+			this._onDidSearchTypeChange.fire(this.searchType);
+		}
+		return TPromise.as(null);
+	}
+
+	private update(): void {
+		// this.fuzzySearchAction.enabled = this.contextService.getWorkbenchState() !== WorkbenchState.EMPTY;
+		// this.folderSettings.getAction().enabled = this.contextService.getWorkbenchState() === WorkbenchState.WORKSPACE && this.contextService.getWorkspace().folders.length > 0;
+	}
 }
 
 export interface SearchOptions extends IInputOptions {
