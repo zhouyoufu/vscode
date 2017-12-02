@@ -90,6 +90,10 @@ export class PreferencesSearchModel implements IPreferencesSearchModel {
 		}
 	}
 
+	getCount(): TPromise<number> {
+		return this._remoteProvider ? this._remoteProvider.getCount() : TPromise.wrap(0);
+	}
+
 	filterPreferences(preferencesModel: ISettingsEditorModel): TPromise<IFilterResult> {
 		if (!this.filter) {
 			return TPromise.wrap(null);
@@ -148,7 +152,24 @@ class RemoteSearchProvider {
 		this._remoteSearchP = filter ? this.getSettingsFromBing(filter, endpoint) : TPromise.wrap(null);
 	}
 
+	getCount(): TPromise<number> {
+		return this.waitForRemoteResult().then(result => result ? result.sortedNames.length : 0);
+	}
+
 	filterPreferences(preferencesModel: ISettingsEditorModel): TPromise<IFilterResult> {
+		return this.waitForRemoteResult().then(result => {
+			if (result) {
+				const settingMatcher = this.getRemoteSettingMatcher(result.sortedNames, preferencesModel);
+				const filterResult = preferencesModel.filterSettings(this._filter, group => null, settingMatcher, result.sortedNames);
+				filterResult.metadata = result.remoteResult;
+				return filterResult;
+			} else {
+				return null;
+			}
+		});
+	}
+
+	private waitForRemoteResult(): TPromise<{ remoteResult: IFilterMetadata, sortedNames: string[] }> {
 		return this._remoteSearchP.then(remoteResult => {
 			if (remoteResult) {
 				let sortedNames = Object.keys(remoteResult.scoredResults).sort((a, b) => remoteResult.scoredResults[b] - remoteResult.scoredResults[a]);
@@ -157,10 +178,7 @@ class RemoteSearchProvider {
 					sortedNames = sortedNames.filter(name => remoteResult.scoredResults[name] >= highScore / 2);
 				}
 
-				const settingMatcher = this.getRemoteSettingMatcher(sortedNames, preferencesModel);
-				const result = preferencesModel.filterSettings(this._filter, group => null, settingMatcher, sortedNames);
-				result.metadata = remoteResult;
-				return result;
+				return { sortedNames, remoteResult };
 			} else {
 				return null;
 			}

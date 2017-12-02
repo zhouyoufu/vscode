@@ -168,6 +168,7 @@ export interface IPreferencesSearchService {
 
 export interface IPreferencesSearchModel {
 	filterPreferences(preferencesModel: ISettingsEditorModel): TPromise<IFilterResult>;
+	getCount(): TPromise<number>;
 }
 
 export const CONTEXT_SETTINGS_EDITOR = new RawContextKey<boolean>('inSettingsEditor', false);

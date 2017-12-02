@@ -109,7 +109,7 @@ export class DefaultSettingsHeaderWidget extends SettingsHeaderWidget {
 		super.create();
 
 		this.linkElement = DOM.append(this.titleContainer, DOM.$('a.settings-header-natural-language-link'));
-		this.linkElement.textContent = localize('defaultSettingsFuzzyPrompt', "Try natural language search!");
+		// this.linkElement.textContent = localize('defaultSettingsFuzzyPrompt', "Try natural language search!");
 
 		this.onclick(this.linkElement, e => this._onClick.fire());
 		this.toggleMessage(true);
@@ -548,7 +548,7 @@ export class DefaultSettingsType extends Widget {
 		this.filterAction = new Action('filterSettings', localize('filterSettings', "Filtered Results"), '.settings-tab', true, () => this.updateTarget(SettingsSearchType.FILTER));
 		this.filterAction.tooltip = this.filterAction.label;
 
-		this.fuzzySearchAction = new Action('fuzzySearchSettings', localize('fuzzySearchSettings', "Fuzzy Search Results"), '.settings-tab', true, () => this.updateTarget(SettingsSearchType.FUZZY));
+		this.fuzzySearchAction = new Action('fuzzySearchSettings', localize('fuzzySearchSettings', "Search Results"), '.settings-tab', true, () => this.updateTarget(SettingsSearchType.FUZZY));
 		this.fuzzySearchAction.tooltip = this.fuzzySearchAction.label;
 
 		this.update();
@@ -564,6 +564,15 @@ export class DefaultSettingsType extends Widget {
 		this._searchType = searchType;
 		this.filterAction.checked = this.searchType === SettingsSearchType.FILTER;
 		this.fuzzySearchAction.checked = this.searchType === SettingsSearchType.FUZZY;
+	}
+
+	public setResultCount(count: number): void {
+		let label = localize('fuzzySearchSettings', "Search Results");
+		if (count > 0) {
+			label += ' ' + `(${count})`;
+		}
+
+		this.fuzzySearchAction.label = label;
 	}
 
 	private onWorkbenchStateChanged(): void {

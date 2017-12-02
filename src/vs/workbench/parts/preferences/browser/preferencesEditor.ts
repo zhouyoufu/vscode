@@ -113,6 +113,9 @@ export class PreferencesEditor extends BaseEditor {
 	private lastFocusedWidget: SearchWidget | SideBySidePreferencesWidget = null;
 	private memento: any;
 
+	private currentFuzzyFilter: TPromise<{ count: number, metadata: IFilterMetadata }>;
+	private currentFuzzySearchModel: IPreferencesSearchModel;
+
 	constructor(
 		@IPreferencesService private preferencesService: IPreferencesService,
 		@IPreferencesSearchService private preferencesSearchService: IPreferencesSearchService,
@@ -243,16 +246,31 @@ export class PreferencesEditor extends BaseEditor {
 		});
 	}
 
+	private fuzzyEnabled(): boolean {
+		return this.sideBySidePreferencesWidget.settingsSearchType === SettingsSearchType.FUZZY;
+	}
+
 	private onInputChanged(): void {
-		if (this.sideBySidePreferencesWidget.settingsSearchType === SettingsSearchType.FUZZY) {
-			this.triggerThrottledFilter();
-		} else {
+		this.triggerThrottledFilter();
+
+		if (!this.fuzzyEnabled()) {
 			this.filterPreferences();
 		}
 	}
 
 	private triggerThrottledFilter(): void {
-		this.filterThrottle.trigger(() => this.filterPreferences());
+		this.filterThrottle.trigger(() => {
+			const filter = this.searchWidget.getValue().trim();
+			this.currentFuzzySearchModel = this.preferencesSearchService.startSearch(filter, true);
+
+			return this.currentFuzzySearchModel.getCount().then(count => {
+				this.sideBySidePreferencesWidget.setFuzzyResultCount(count);
+
+				if (this.fuzzyEnabled()) {
+					this.filterPreferences();
+				}
+			});
+		});
 	}
 
 	private switchSettings(target: SettingsTarget): void {
@@ -273,14 +291,21 @@ export class PreferencesEditor extends BaseEditor {
 	}
 
 	private onSettingsSearchTypeChanged(searchType: SettingsSearchType): void {
-		this.onInputChanged();
+		this.filterPreferences();
 	}
 
 	private filterPreferences(): TPromise<void> {
-		this.memento['searchType'] = this.sideBySidePreferencesWidget.onDidSearchTypeChange;
+		this.memento['searchType'] = this.fuzzyEnabled();
 		const filter = this.searchWidget.getValue().trim();
-		const fuzzy = this.sideBySidePreferencesWidget.settingsSearchType === SettingsSearchType.FUZZY;
-		return this.preferencesRenderers.filterPreferences({ filter, fuzzy }).then(result => {
+
+		let filterP;
+		if (this.fuzzyEnabled()) {
+			filterP = this.preferencesRenderers.filterPreferences({ filter, fuzzy: true }, this.currentFuzzySearchModel);
+		} else {
+			filterP = this.preferencesRenderers.filterPreferences({ filter, fuzzy: false }, null);
+		}
+
+		return filterP.then(result => {
 			this.showSearchResultsMessage(result.count);
 			if (result.count === 0) {
 				this.latestEmptyFilters.push(filter);
@@ -447,7 +472,7 @@ class PreferencesRenderers extends Disposable {
 		}
 	}
 
-	filterPreferences(criteria: ISearchCriteria): TPromise<{ count: number, metadata: IFilterMetadata }> {
+	filterPreferences(criteria: ISearchCriteria, searchModel): TPromise<{ count: number, metadata: IFilterMetadata }> {
 		this._searchCriteria = criteria;
 
 		if (this._filtersInProgress) {
@@ -455,7 +480,7 @@ class PreferencesRenderers extends Disposable {
 			this._filtersInProgress.forEach(p => p.cancel && p.cancel());
 		}
 
-		this._currentSearchModel = this.preferencesSearchService.startSearch(this._searchCriteria.filter, criteria.fuzzy);
+		this._currentSearchModel = searchModel || this.preferencesSearchService.startSearch(this._searchCriteria.filter, criteria.fuzzy);
 		this._filtersInProgress = [this._filterDefaultPreferences(), this._filterEditablePreferences()];
 
 		return TPromise.join<IFilterResult>(this._filtersInProgress).then(() => {
@@ -612,6 +637,10 @@ class SideBySidePreferencesWidget extends Widget {
 
 	public get settingsSearchType(): SettingsSearchType {
 		return this.settingsSearchTypeWidget.searchType;
+	}
+
+	public setFuzzyResultCount(count: number): void {
+		this.settingsSearchTypeWidget.setResultCount(count);
 	}
 
 	private create(parentElement: HTMLElement): void {
