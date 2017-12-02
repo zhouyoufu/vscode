@@ -141,12 +141,9 @@ export class PreferencesEditor extends BaseEditor {
 			ariaLabel: nls.localize('SearchSettingsWidget.AriaLabel', "Search settings"),
 			placeholder: nls.localize('SearchSettingsWidget.Placeholder', "Search Settings"),
 			focusKey: this.focusSettingsContextKey,
-			showFuzzyToggle: true,
 			showResultCount: true
 		}));
-		this.searchWidget.setFuzzyToggleVisible(this.preferencesSearchService.remoteSearchAllowed);
-		this.searchWidget.fuzzyEnabled = this.memento['fuzzyEnabled'];
-		this._register(this.preferencesSearchService.onRemoteSearchEnablementChanged(enabled => this.searchWidget.setFuzzyToggleVisible(enabled)));
+		// this._register(this.preferencesSearchService.onRemoteSearchEnablementChanged(enabled => this.searchWidget.setFuzzyToggleVisible(enabled)));
 		this._register(this.searchWidget.onDidChange(value => this.onInputChanged()));
 		this._register(this.searchWidget.onFocus(() => this.lastFocusedWidget = this.searchWidget));
 		this.lastFocusedWidget = this.searchWidget;
@@ -160,7 +157,7 @@ export class PreferencesEditor extends BaseEditor {
 		this.preferencesRenderers = this._register(new PreferencesRenderers(this.preferencesSearchService));
 
 		this._register(this.preferencesRenderers.onTriggeredFuzzy(() => {
-			this.searchWidget.fuzzyEnabled = true;
+			// this.searchWidget.fuzzyEnabled = true;
 			this.filterPreferences();
 		}));
 
@@ -247,7 +244,7 @@ export class PreferencesEditor extends BaseEditor {
 	}
 
 	private onInputChanged(): void {
-		if (this.searchWidget.fuzzyEnabled) {
+		if (this.sideBySidePreferencesWidget.settingsSearchType === SettingsSearchType.FUZZY) {
 			this.triggerThrottledFilter();
 		} else {
 			this.filterPreferences();
@@ -276,19 +273,14 @@ export class PreferencesEditor extends BaseEditor {
 	}
 
 	private onSettingsSearchTypeChanged(searchType: SettingsSearchType): void {
-		if (searchType === SettingsSearchType.FILTER && this.searchWidget.fuzzyEnabled) {
-			this.searchWidget.fuzzyEnabled = false;
-			this.onInputChanged();
-		} else if (searchType === SettingsSearchType.FUZZY && !this.searchWidget.fuzzyEnabled) {
-			this.searchWidget.fuzzyEnabled = true;
-			this.onInputChanged();
-		}
+		this.onInputChanged();
 	}
 
 	private filterPreferences(): TPromise<void> {
-		this.memento['fuzzyEnabled'] = this.searchWidget.fuzzyEnabled;
+		this.memento['searchType'] = this.sideBySidePreferencesWidget.onDidSearchTypeChange;
 		const filter = this.searchWidget.getValue().trim();
-		return this.preferencesRenderers.filterPreferences({ filter, fuzzy: this.searchWidget.fuzzyEnabled }).then(result => {
+		const fuzzy = this.sideBySidePreferencesWidget.settingsSearchType === SettingsSearchType.FUZZY;
+		return this.preferencesRenderers.filterPreferences({ filter, fuzzy }).then(result => {
 			this.showSearchResultsMessage(result.count);
 			if (result.count === 0) {
 				this.latestEmptyFilters.push(filter);
@@ -616,6 +608,10 @@ class SideBySidePreferencesWidget extends Widget {
 	) {
 		super();
 		this.create(parent);
+	}
+
+	public get settingsSearchType(): SettingsSearchType {
+		return this.settingsSearchTypeWidget.searchType;
 	}
 
 	private create(parentElement: HTMLElement): void {
