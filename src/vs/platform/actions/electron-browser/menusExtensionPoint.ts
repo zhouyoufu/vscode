@@ -238,8 +238,26 @@ namespace schema {
 				type: 'string'
 			},
 			title: {
-				description: localize('vscode.extension.contributes.commandType.title', 'Title by which the command is represented in the UI'),
-				type: 'string'
+				oneOf: [
+					{
+						description: localize('vscode.extension.contributes.commandType.title', 'Title by which the command is represented in the UI'),
+						type: 'string'
+					},
+					{
+						type: 'object',
+						required: ['value', 'original'],
+						properties: {
+							value: {
+								description: localize('vscode.extension.contributes.commandType.title.value', 'Title by which the command is represented in the UI'),
+								type: 'string'
+							},
+							original: {
+								description: localize('vscode.extension.contributes.commandType.title.original', 'The original English value by which the command is represented in the UI'),
+								type: 'string'
+							}
+						}
+					}
+				]
 			},
 			category: {
 				description: localize('vscode.extension.contributes.commandType.category', '(Optional) Category string by the command is grouped in the UI'),
