@@ -14,8 +14,43 @@ import * as os from 'os';
 import { virtualMachineHint } from 'vs/base/node/id';
 import { repeat, pad } from 'vs/base/common/strings';
 import { isWindows } from 'vs/base/common/platform';
-import { app } from 'electron';
+// import { app } from 'electron';
 import { basename } from 'path';
+
+export function getDiagnostics(info: IMainProcessInfo): Promise<string> {
+	return listProcesses(info.mainPID).then(rootProcess => {
+		let result = ''
+
+		// Environment Info
+		result += '\n';
+		result += formatEnvironment(info);
+
+		// Process List
+		// result += '\n';
+		// result += formatProcessList(info, rootProcess);
+
+		// Workspace Stats
+		if (info.windows.some(window => window.folders.length > 0)) {
+			result += '\n';
+			result += 'Workspace Stats: ';
+			info.windows.forEach(window => {
+				if (window.folders.length === 0) {
+					return;
+				}
+
+				result += `|  Renderer (${window.title})`;
+
+				window.folders.forEach(folder => {
+					result += `|    Folder (${basename(folder)})`;
+					const stats = collectWorkspaceStats(folder, ['node_modules', '.git']);
+					result += formatWorkspaceStats(stats);
+				});
+			});
+		}
+		result += '\n\n'
+		return result;
+	});
+}
 
 export function printDiagnostics(info: IMainProcessInfo): Promise<any> {
 	return listProcesses(info.mainPID).then(rootProcess => {
@@ -116,7 +151,7 @@ function formatEnvironment(info: IMainProcessInfo): string {
 		output.push(`Load (avg):       ${os.loadavg().map(l => Math.round(l)).join(', ')}`); // only provided on Linux/macOS
 	}
 	output.push(`VM:               ${Math.round((virtualMachineHint.value() * 100))}%`);
-	output.push(`Screen Reader:    ${app.isAccessibilitySupportEnabled() ? 'yes' : 'no'}`);
+	// output.push(`Screen Reader:    ${app.isAccessibilitySupportEnabled() ? 'yes' : 'no'}`);
 
 	return output.join('\n');
 }

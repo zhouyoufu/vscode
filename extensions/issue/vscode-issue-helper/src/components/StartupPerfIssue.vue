@@ -45,7 +45,8 @@ export default {
   computed: {
     ...mapState([
       'isStartupPerfIssue',
-      'vscodeInfo'
+      'vscodeInfo',
+      'info'
     ])
   },
   methods: {
@@ -53,7 +54,7 @@ export default {
       this.$store.commit('setStartupPerfIssue', val)
     },
     submitStartupIssueToGithub () {
-      const baseURL = 'https://github.com/microsoft/vscode/issues/new?body='
+      // const baseURL = 'https://github.com/microsoft/vscode/issues/new?body='
 
       const props = {
         'VS Code': this.vscodeInfo.vscode,
@@ -78,10 +79,20 @@ export default {
         body += `|${k}|${val}|\n`
       })
 
+      body += "## Workspace Info\n"
+      body += "```\n"
+      body += this.info
+      body += "\n```\n"
+
       body += "\n\n---\n\n## Startup Profile\n"
       body += "Please attach the startup profile according to [these instructions](https://github.com/Microsoft/vscode/wiki/Performance-Issues#profile-startup)."
 
-      window.open(baseURL + encodeURIComponent(body), '_blank')
+      const arr = [body]
+
+      window.parent.postMessage({
+        command: 'did-click-link',
+        data: `command:extension.openWindow?${encodeURIComponent(JSON.stringify(arr))}`
+      }, 'file://')
     },
     submitNonStartupIssueToGithub () {
       // const baseURL = 'https://github.com/microsoft/vscode/issues/new?body='
@@ -107,6 +118,11 @@ export default {
         const val = props[k]
         body += `|${k}|${val}|\n`
       })
+
+      body += "## Workspace Info\n"
+      body += "```\n"
+      body += this.info
+      body += "\n```\n"
 
       body += "\n\n---\n\n## Profile\n"
       body += "Please attach the profile according to [these instructions](https://github.com/Microsoft/vscode/wiki/Performance-Issues#profile-a-vs-code-window)."

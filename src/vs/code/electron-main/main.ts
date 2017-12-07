@@ -149,6 +149,7 @@ function setupIPC(accessor: ServicesAccessor): TPromise<Server> {
 					// Process Info
 					if (environmentService.args.ps) {
 						return service.getMainProcessInfo().then(info => {
+							console.log(JSON.stringify(info))
 							return printDiagnostics(info).then(() => TPromise.wrapError(new ExpectedError()));
 						});
 					}

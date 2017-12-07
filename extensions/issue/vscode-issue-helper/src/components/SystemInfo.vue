@@ -53,6 +53,12 @@
         </tbody>
       </table>
     </div>
+    <div class="block bg-faded">
+      <h2>Workspace Info</h2>
+      <pre>
+        <code>{{ info }}</code>
+      </pre>
+    </div>
   </div>
 </template>
 
@@ -60,17 +66,23 @@
 export default {
   data () {
     return {
-      vscodeInfo: {}
+      vscodeInfo: {},
+      info: ''
     }
   },
   mounted () {
-    window.addEventListener('message', ({ data }) => {
-      this.vscodeInfo = data
-      this.$store.commit('updateVSCodeInfo', data)
+    window.addEventListener('message', ({ data: { vscodeInfo, info } }) => {
+      this.vscodeInfo = vscodeInfo
+      this.info = info
+      this.$store.commit('updateVSCodeInfo', vscodeInfo)
+      this.$store.commit('updateInfo', info)
     })
   }
 }
 </script>
 
 <style lang="scss" scoped>
+pre {
+  font-size: 12px;
+}
 </style>

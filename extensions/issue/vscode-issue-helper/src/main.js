@@ -35,7 +35,8 @@ const store = new Vuex.Store({
     isCausedByExt: true,
     isFixedInInsiders: true,
     isStartupPerfIssue: true,
-    vscodeInfo: {}
+    vscodeInfo: {},
+    info: {}
   },
   mutations: {
     setCausedByExt (state, val) {
@@ -49,6 +50,9 @@ const store = new Vuex.Store({
     },
     updateVSCodeInfo (state, val) {
       state.vscodeInfo = val
+    },
+    updateInfo (state, val) {
+      state.info = val
     }
   }
 })

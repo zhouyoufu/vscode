@@ -18,7 +18,7 @@ export const activate = (context: vscode.ExtensionContext) => {
     )
   )
 
-  context.subscriptions.push(vscode.commands.registerCommand('extension.previewPerfIssue', ({ vscodeInfo }) => {
+  context.subscriptions.push(vscode.commands.registerCommand('extension.previewPerfIssue', ({ vscodeInfo, info }) => {
     vscode.commands.executeCommand(
       'vscode.previewHtml',
       vscode.Uri.parse('vscode-perf-issue://new-issue'),
@@ -27,7 +27,7 @@ export const activate = (context: vscode.ExtensionContext) => {
     ).then(() => {
       vscode.commands.executeCommand('_workbench.htmlPreview.postMessage',
         'vscode-perf-issue://new-issue',
-        vscodeInfo
+        { vscodeInfo, info }
       )
     })
   }))

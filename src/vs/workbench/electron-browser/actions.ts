@@ -47,6 +47,7 @@ import { IExtensionService, ActivationTimes } from 'vs/platform/extensions/commo
 import { getEntries } from 'vs/base/common/performance';
 import { IEditor } from 'vs/platform/editor/common/editor';
 import { ICommandService } from 'vs/platform/commands/common/commands';
+import { getDiagnostics } from 'vs/code/electron-main/diagnostics';
 
 // --- actions
 
@@ -1002,7 +1003,10 @@ export class ReportPerformanceIssueAction extends Action {
 	public run(appendix?: string): TPromise<boolean> {
 		return this.integrityService.isPure().then(res => {
 			const vscodeInfo = this.getVSCodeInfo(product.reportIssueUrl, pkg.name, pkg.version, product.commit, product.date, res.isPure, appendix);
-			this.commandService.executeCommand('extension.previewPerfIssue', { vscodeInfo })
+			const info = { mainPID: 44620, windows: [{ pid: 44635, title: 'tsconfig.json — vetur', folders: ['/Users/octref/Code/mine/vetur'] }] }
+			getDiagnostics(info).then(info => {
+				this.commandService.executeCommand('extension.previewPerfIssue', { vscodeInfo, info })
+			})
 
 			return TPromise.as(true);
 		});
