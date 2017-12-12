@@ -24,3 +24,5 @@ rmdir /s /q %VSCODEUSERDATADIR%
 popd
 
 endlocal
+
+exit /b 1
