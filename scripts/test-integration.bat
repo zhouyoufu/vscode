@@ -25,4 +25,5 @@ popd
 
 endlocal
 
-exit /b 1
+echo errorlevel-int: %errorlevel%
+exit /b %errorlevel%
