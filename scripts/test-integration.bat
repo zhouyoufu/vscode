@@ -15,6 +15,8 @@ call .\scripts\code.bat $%~dp0\..\extensions\emmet\test-fixtures --extensionDeve
 
 :: Integration & performance tests in AMD
 call .\scripts\test.bat --runGlob **\*.integrationTest.js %*
+echo errorlevel-int: %errorlevel%
+if %errorlevel% neq 0 exit /b %errorlevel%
 
 :: Tests in commonJS (language servers tests...)
 call .\scripts\node-electron.bat .\node_modules\mocha\bin\_mocha .\extensions\html\server\out\test\
@@ -25,5 +27,4 @@ popd
 
 endlocal
 
-echo errorlevel-int: %errorlevel%
 exit /b %errorlevel%
