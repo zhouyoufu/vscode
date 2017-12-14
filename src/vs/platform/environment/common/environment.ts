@@ -54,6 +54,7 @@ export interface ParsedArgs {
 	'skip-add-to-recently-opened'?: boolean;
 	'sudo-write'?: boolean;
 	'sudo-chmod'?: boolean;
+	'upload-logs'?: boolean;
 }
 
 export const IEnvironmentService = createDecorator<IEnvironmentService>('environmentService');

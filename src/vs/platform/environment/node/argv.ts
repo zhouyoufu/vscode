@@ -56,7 +56,8 @@ const options: minimist.Opts = {
 		'skip-add-to-recently-opened',
 		'status',
 		'sudo-write',
-		'sudo-chmod'
+		'sudo-chmod',
+		'upload-logs'
 	],
 	alias: {
 		add: 'a',
@@ -154,7 +155,8 @@ export const optionsHelp: { [name: string]: string; } = {
 	'--disable-gpu': localize('disableGPU', "Disable GPU hardware acceleration."),
 	'-s, --status': localize('status', "Print process usage and diagnostics information."),
 	'-v, --version': localize('version', "Print version."),
-	'-h, --help': localize('help', "Print usage.")
+	'-h, --help': localize('help', "Print usage."),
+	'--upload-logs': localize('uploadLogs', "Upload logs.")
 };
 
 export function formatOptions(options: { [name: string]: string; }, columns: number): string {
