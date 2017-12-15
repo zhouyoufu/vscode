@@ -7,25 +7,33 @@
 
 import * as os from 'os';
 import * as cp from 'child_process';
+import * as fs from 'fs';
+import * as https from 'https';
+import * as path from 'path';
 
 import { ILaunchChannel } from 'vs/code/electron-main/launch';
+import { TPromise } from 'vs/base/common/winjs.base';
+
+interface PostResult {
+	blob_id: string;
+}
 
 export async function uploadLogs(
 	channel: ILaunchChannel
-): Promise<any> {
+): TPromise<any> {
 	const logsPath = await channel.call('get-logs-path', null);
 	const outZip = await zipLogs(logsPath);
-	return postLogs(logsPath, outZip);
+	const result = await postLogs(logsPath, outZip);
+	console.log('Blob: ' + result.blob_id);
+	return result;
 }
 
-async function postLogs(
+function postLogs(
 	logsPath: string,
 	outZip: string
-) {
-	const fs = await import('fs');
-	const http = await import('https');
-	return new Promise((resolve, reject) => {
-		const req = http.request({
+): TPromise<PostResult> {
+	return new TPromise((resolve, reject) => {
+		const req = https.request({
 			host: 'vscode-log-uploader.azure-api.net',
 			path: '/v1/upload',
 			method: 'POST',
@@ -34,12 +42,18 @@ async function postLogs(
 				'Content-Length': fs.statSync(logsPath).size
 			}
 		}, res => {
-			res.on('data', (chunk) => {
-				console.log(`BODY: ${chunk}`);
+			const chunks: (Buffer)[] = [];
+			res.on('data', (chunk: Buffer) => {
+				chunks.push(chunk);
 			});
 			res.on('end', () => {
-				console.log('No more data in response.');
-				resolve();
+				const body = Buffer.concat(chunks);
+				try {
+					resolve(JSON.parse(body.toString()));
+				} catch (e) {
+					console.log('Error parsing response');
+					reject(e);
+				}
 			});
 			res.on('error', (e) => {
 				console.log('Error posting logs');
@@ -50,15 +64,12 @@ async function postLogs(
 	});
 }
 
-async function zipLogs(
+function zipLogs(
 	logsPath: string
-): Promise<string> {
-	const fs = await import('fs');
-	const path = await import('path');
-
+): TPromise<string> {
 	const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vscode-log-upload'));
 	const outZip = path.join(tempDir, 'logs.zip');
-	return new Promise<string>((resolve, reject) => {
+	return new TPromise<string>((resolve, reject) => {
 		doZip(logsPath, outZip, (err, stdout, stderr) => {
 			if (err) {
 				console.error('Error zipping logs', err);
