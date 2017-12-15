@@ -5,6 +5,9 @@
 
 'use strict';
 
+import * as os from 'os';
+import * as cp from 'child_process';
+
 import { ILaunchChannel } from 'vs/code/electron-main/launch';
 
 export async function uploadLogs(
@@ -50,15 +53,13 @@ async function postLogs(
 async function zipLogs(
 	logsPath: string
 ): Promise<string> {
-	const cp = await import('child_process');
 	const fs = await import('fs');
-	const os = await import('os');
 	const path = await import('path');
 
 	const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vscode-log-upload'));
 	const outZip = path.join(tempDir, 'logs.zip');
 	return new Promise<string>((resolve, reject) => {
-		cp.execFile('zip', ['-r', outZip, '.'], { cwd: logsPath }, (err, stdout, stderr) => {
+		doZip(logsPath, outZip, (err, stdout, stderr) => {
 			if (err) {
 				console.error('Error zipping logs', err);
 				reject(err);
@@ -68,4 +69,18 @@ async function zipLogs(
 			resolve(outZip);
 		});
 	});
+}
+
+function doZip(
+	logsPath: string,
+	outZip: string,
+	callback: (error: Error, stdout: string, stderr: string) => void
+) {
+	switch (os.platform()) {
+		case 'win32':
+			return cp.execFile('powershell', ['-Command', `Compress-Archive -Path "${logsPath}" -DestinationPath ${outZip}`], { cwd: logsPath }, callback);
+
+		default:
+			return cp.execFile('zip', ['-r', outZip, '.'], { cwd: logsPath }, callback);
+	}
 }
