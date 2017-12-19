@@ -54,6 +54,9 @@ import { IWorkspacesMainService } from 'vs/platform/workspaces/common/workspaces
 import { dirname, join } from 'path';
 import { touch } from 'vs/base/node/pfs';
 import { getMachineId } from 'vs/base/node/id';
+import { DiagnosticsChannel } from 'vs/platform/diagnostics/common/diagnosticsipc';
+import { IDiagnosticsService } from 'vs/platform/diagnostics/common/diagnostics';
+import { DiagnosticsService } from 'vs/platform/diagnostics/electron-main/diagnosticsService';
 
 export class CodeApplication {
 
@@ -303,6 +306,7 @@ export class CodeApplication {
 		services.set(IWindowsMainService, new SyncDescriptor(WindowsManager, machineId));
 		services.set(IWindowsService, new SyncDescriptor(WindowsService, this.sharedProcess));
 		services.set(ILaunchService, new SyncDescriptor(LaunchService));
+		services.set(IDiagnosticsService, new SyncDescriptor(DiagnosticsService));
 
 		// Telemtry
 		if (this.environmentService.isBuilt && !this.environmentService.isExtensionDevelopment && !this.environmentService.args['disable-telemetry'] && !!product.enableTelemetry) {
@@ -355,6 +359,11 @@ export class CodeApplication {
 		const windowsChannel = new WindowsChannel(windowsService);
 		this.electronIpcServer.registerChannel('windows', windowsChannel);
 		this.sharedProcessClient.done(client => client.registerChannel('windows', windowsChannel));
+
+		const diagnosticsService = accessor.get(IDiagnosticsService);
+		const diagnosticsChannel = new DiagnosticsChannel(diagnosticsService);
+		this.electronIpcServer.registerChannel('diagnostics', diagnosticsChannel);
+		this.sharedProcessClient.done(client => client.registerChannel('diagnostics', diagnosticsChannel));
 
 		// Lifecycle
 		this.lifecycleService.ready();

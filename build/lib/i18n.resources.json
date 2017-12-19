@@ -67,6 +67,10 @@
 			"project": "vscode-workbench"
 		},
 		{
+			"name": "vs/workbench/parts/issuereporter",
+			"project": "vscode-workbench"
+		},
+		{
 			"name": "vs/workbench/parts/markers",
 			"project": "vscode-workbench"
 		},

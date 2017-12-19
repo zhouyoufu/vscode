@@ -43,6 +43,8 @@ import { createLogService } from 'vs/platform/log/node/spdlogService';
 
 import fs = require('fs');
 import { ConsoleLogService, MultiplexLogService } from 'vs/platform/log/common/log';
+import { IDiagnosticsService } from 'vs/platform/diagnostics/common/diagnostics';
+import { DiagnosticsChannelClient } from 'vs/platform/diagnostics/common/diagnosticsipc';
 gracefulFs.gracefulify(fs); // enable gracefulFs
 
 export function startup(configuration: IWindowConfiguration): TPromise<void> {
@@ -203,6 +205,9 @@ function createMainProcessServices(mainProcessClient: ElectronIPCClient, configu
 
 	const workspacesChannel = mainProcessClient.getChannel('workspaces');
 	serviceCollection.set(IWorkspacesService, new WorkspacesChannelClient(workspacesChannel));
+
+	const diagnosticsChannel = mainProcessClient.getChannel('diagnostics');
+	serviceCollection.set(IDiagnosticsService, new DiagnosticsChannelClient(diagnosticsChannel));
 
 	return serviceCollection;
 }
