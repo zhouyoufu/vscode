@@ -219,11 +219,6 @@ export async function main(argv: string[]): TPromise<any> {
 			}
 		}
 
-		// If --issue is specified, launch BrowserWindow
-		if (args.issue) {
-			argv.push(`--inspect-brk=1235`);
-		}
-
 		// If we are started with --wait create a random temporary file
 		// and pass it over to the starting instance. We can use this file
 		// to wait for it to be deleted to monitor that the edited file
@@ -317,7 +312,9 @@ export async function main(argv: string[]): TPromise<any> {
 			options['stdio'] = 'ignore';
 		}
 
-		const child = spawn(process.execPath, argv.slice(2), options);
+		const childArgs = argv.slice(2);
+		childArgs.push('--inspect-brk=1237');
+		const child = spawn(process.execPath, childArgs, options);
 
 		if (args.wait && waitMarkerFilePath) {
 			return new TPromise<void>(c => {
