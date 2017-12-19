@@ -39,7 +39,7 @@ function postLogs(
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/zip',
-				'Content-Length': fs.statSync(logsPath).size
+				'Content-Length': fs.statSync(outZip).size
 			}
 		}, res => {
 			const chunks: (Buffer)[] = [];
