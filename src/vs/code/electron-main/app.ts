@@ -54,6 +54,8 @@ import { IWorkspacesMainService } from 'vs/platform/workspaces/common/workspaces
 import { dirname, join } from 'path';
 import { touch } from 'vs/base/node/pfs';
 import { getMachineId } from 'vs/base/node/id';
+import { IIssueService } from 'vs/platform/issue/common/issue';
+import { IssueChannel } from 'vs/platform/issue/common/issueIpc';
 
 export class CodeApplication {
 
@@ -346,6 +348,10 @@ export class CodeApplication {
 		const urlService = accessor.get(IURLService);
 		const urlChannel = appInstantiationService.createInstance(URLChannel, urlService);
 		this.electronIpcServer.registerChannel('url', urlChannel);
+
+		const issueService = accessor.get(IIssueService);
+		const issueChannel = new IssueChannel(issueService);
+		this.electronIpcServer.registerChannel('issue', issueChannel);
 
 		const workspacesService = accessor.get(IWorkspacesMainService);
 		const workspacesChannel = appInstantiationService.createInstance(WorkspacesChannel, workspacesService);

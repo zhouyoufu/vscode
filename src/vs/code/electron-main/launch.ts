@@ -16,6 +16,7 @@ import { OpenContext } from 'vs/platform/windows/common/windows';
 import { IWindowsMainService, ICodeWindow } from 'vs/platform/windows/electron-main/windows';
 import { whenDeleted } from 'vs/base/node/pfs';
 import { IWorkspacesMainService } from 'vs/platform/workspaces/common/workspaces';
+// import {IIssueService} from 'vs/platform/issue/common/issue';
 
 export const ID = 'launchService';
 export const ILaunchService = createDecorator<ILaunchService>(ID);
@@ -99,6 +100,7 @@ export class LaunchService implements ILaunchService {
 		@ILogService private logService: ILogService,
 		@IWindowsMainService private windowsMainService: IWindowsMainService,
 		@IURLService private urlService: IURLService,
+		// @IIssueService private issueService: IIssueService,
 		@IWorkspacesMainService private workspacesMainService: IWorkspacesMainService
 	) { }
 
