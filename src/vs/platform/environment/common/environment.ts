@@ -53,6 +53,7 @@ export interface ParsedArgs {
 	'disable-crash-reporter'?: string;
 	'skip-add-to-recently-opened'?: boolean;
 	'sudo-write'?: boolean;
+	'sudo-ppid'?: string;
 	'sudo-chmod'?: boolean;
 }
 

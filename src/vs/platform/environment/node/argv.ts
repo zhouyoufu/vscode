@@ -29,7 +29,8 @@ const options: minimist.Opts = {
 		'open-url',
 		'enable-proposed-api',
 		'export-default-configuration',
-		'install-source'
+		'install-source',
+		'sudo-ppid'
 	],
 	boolean: [
 		'help',

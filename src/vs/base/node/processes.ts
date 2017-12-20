@@ -20,6 +20,7 @@ import * as TPath from 'vs/base/common/paths';
 import * as Platform from 'vs/base/common/platform';
 import { LineDecoder } from 'vs/base/node/decoder';
 import { CommandOptions, ForkOptions, SuccessData, Source, TerminateResponse, TerminateResponseCode, Executable } from 'vs/base/common/processes';
+import { listProcesses } from 'vs/base/node/ps';
 export { CommandOptions, ForkOptions, SuccessData, Source, TerminateResponse, TerminateResponseCode };
 
 export interface LineData {
@@ -415,4 +416,47 @@ export function createQueuedSender(childProcess: ChildProcess | NodeJS.Process):
 	};
 
 	return { send };
+}
+
+/**
+ * Finds out if the current process (identified via process.pid) is a child
+ * of the provided process ID. This can be any hiearchy level down.
+ */
+export function isChildOfProcess(ppid: number): Promise<boolean> {
+	interface ProcessTreeNode {
+		pid: number;
+		children?: ProcessTreeNode[];
+	}
+
+	function contains(pid: number, node?: ProcessTreeNode, ): boolean {
+		if (!node) {
+			return false;
+		}
+
+		// Return if we have a match
+		if (node.pid === pid) {
+			return true;
+		}
+
+		// Recurse into children
+		return node.children && node.children.some(child => contains(pid, child));
+	}
+
+	let processTree: Promise<ProcessTreeNode>;
+
+	// macOS, Linux: use our ps helper that is fast
+	if (Platform.isLinux || Platform.isMacintosh) {
+		processTree = listProcesses(ppid);
+	}
+
+	// Windows: use native windows-process-tree
+	else {
+		processTree = (import('windows-process-tree')).then(windowsProcessTree => {
+			return new Promise((resolve) => {
+				windowsProcessTree(ppid, tree => resolve(tree));
+			});
+		});
+	}
+
+	return processTree.then(tree => contains(process.pid, tree));
 }

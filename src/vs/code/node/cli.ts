@@ -19,6 +19,7 @@ import { resolveTerminalEncoding } from 'vs/base/node/encoding';
 import * as iconv from 'iconv-lite';
 import { writeFileAndFlushSync } from 'vs/base/node/extfs';
 import { isWindows } from 'vs/base/common/platform';
+import { isChildOfProcess } from 'vs/base/node/processes';
 
 function shouldSpawnCliProcess(argv: ParsedArgs): boolean {
 	return !!argv['install-source']
@@ -61,9 +62,11 @@ export async function main(argv: string[]): TPromise<any> {
 	else if (args['sudo-write']) {
 		const source = args._[0];
 		const target = args._[1];
+		const ppid = args['sudo-ppid'];
 
 		// Validate
 		if (
+			typeof ppid !== 'string' ||									// make sure we have a PPID to validate where we are called from
 			!source || !target || source === target ||					// make sure source and target are provided and are not the same
 			!paths.isAbsolute(source) || !paths.isAbsolute(target) ||	// make sure both source and target are absolute paths
 			!fs.existsSync(source) || !fs.statSync(source).isFile() ||	// make sure source exists as file
@@ -72,7 +75,12 @@ export async function main(argv: string[]): TPromise<any> {
 			return TPromise.wrapError(new Error('Using --sudo-write with invalid arguments.'));
 		}
 
-		try {
+		return isChildOfProcess(Number(ppid)).then(isChild => {
+
+			// Check that we are executed from ppid
+			if (!isChild) {
+				return TPromise.wrapError(new Error('Cannot run standalone'));
+			}
 
 			// Check for readonly status and chmod if so if we are told so
 			let targetMode: number;
@@ -105,11 +113,9 @@ export async function main(argv: string[]): TPromise<any> {
 			if (restoreMode) {
 				fs.chmodSync(target, targetMode);
 			}
-		} catch (error) {
-			return TPromise.wrapError(new Error(`Using --sudo-write resulted in an error: ${error}`));
-		}
 
-		return TPromise.as(null);
+			return void 0;
+		}).then(null, error => TPromise.wrapError(new Error(`Using --sudo-write resulted in an error (${error})`)));
 	}
 
 	// Just Code
